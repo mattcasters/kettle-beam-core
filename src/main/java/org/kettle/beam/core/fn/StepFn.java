@@ -138,9 +138,6 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
         //
         for ( StepMetaDataCombi combi : trans.getSteps()) {
           if (stepname.equalsIgnoreCase( combi.stepname )) {
-            if (stepname.equalsIgnoreCase( "Only CA" )) {
-              System.out.print( "...." );
-            }
             stepInterface = combi.step;
             stepDataInterface = combi.data;
 

@@ -37,6 +37,16 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
   public BeamOutputTransform() {
   }
 
+  public BeamOutputTransform( String stepname, String outputLocation, String filePrefix, String fileSuffix, String separator, String enclosure, String rowMetaXml ) {
+    this.stepname = stepname;
+    this.outputLocation = outputLocation;
+    this.filePrefix = filePrefix;
+    this.fileSuffix = fileSuffix;
+    this.separator = separator;
+    this.enclosure = enclosure;
+    this.rowMetaXml = rowMetaXml;
+  }
+
   @Override public PDone expand( PCollection<KettleRow> input ) {
 
     try {

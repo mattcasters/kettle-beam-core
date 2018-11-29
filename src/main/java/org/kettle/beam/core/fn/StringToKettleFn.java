@@ -50,7 +50,7 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
       BeamKettle.init();
 
       if ( rowMeta == null ) {
-        rowMeta = new RowMeta( XMLHandler.getSubNode(XMLHandler.loadXMLFile( rowMetaXml ), RowMeta.XML_META_TAG) );
+        rowMeta = new RowMeta( XMLHandler.getSubNode(XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG) );
         readCounter = Metrics.counter( "read", "INPUT");
         writtenCounter = Metrics.counter( "written", "INPUT");
       }

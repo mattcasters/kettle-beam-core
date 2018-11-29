@@ -25,6 +25,8 @@ public class StepTransform  extends PTransform<PCollection<KettleRow>, PCollecti
   private static final Logger LOG = LoggerFactory.getLogger( StepTransform.class );
   private static final Counter numErrors = Metrics.counter( "main", "StepErrors" );
 
+  public StepTransform() {
+  }
 
   public StepTransform( String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaXml) throws KettleException, IOException {
     this.stepname = stepname;
