@@ -1,11 +1,11 @@
 # kettle-beam-core
 Core classes for the Kettle Beam project
 
-BUILD:
+## BUILD:
 
 mvn clean install
 
-INSTALL
+## INSTALL
 
 Copy target/kettle-beam-<version>.jar your PDI lib/ folder
 
