@@ -80,7 +80,7 @@ public class GroupSubjectFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> {
           /*
           ValueMetaInterface subjectValueMeta = inputRowMeta.getValueMeta( subjectIndexes[i] );
           switch(aggregationTypes[i]) {
-            case COUNT:
+            case COUNT_ALL:
               // Count always gives back a Long
               //
               resultRowMeta.addValueMeta( new ValueMetaInteger( resultFields[i] ) );
@@ -126,7 +126,6 @@ public class GroupSubjectFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> {
 
 
     } catch(Exception e) {
-      e.printStackTrace();
       numErrors.inc();
       LOG.error("Error splitting row into group and subject", e);
       throw new RuntimeException( "Unable to split row into group and subject ", e );

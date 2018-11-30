@@ -29,6 +29,7 @@ import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaDataCombi;
 import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.di.trans.steps.injector.InjectorMeta;
+import org.pentaho.metastore.api.IMetaStore;
 import org.pentaho.metastore.stores.memory.MemoryMetaStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,11 +97,16 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
         // Just to make sure
         BeamKettle.init();
 
+        // TODO: pass in real metastore objects through JSON serialization
+        //
+        IMetaStore metaStore = new MemoryMetaStore();
+
         // Create a very simple new transformation to run single threaded...
         // Single threaded...
         //
         transMeta = new TransMeta();
         transMeta.setTransformationType( TransMeta.TransformationType.SingleThreaded );
+        transMeta.setMetaStore( metaStore );
 
         // Give steps variables from above
         //
@@ -144,6 +150,7 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
         //
         trans = new Trans( transMeta );
         trans.setLogLevel( LogLevel.ERROR );
+        trans.setMetaStore( metaStore );
         trans.prepareExecution( null );
 
         rowProducer = trans.addRowProducer( INJECTOR_STEP_NAME, 0 );
@@ -200,7 +207,7 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
         trans.startThreads();
 
         initCounter.inc();
-        resultRows = new ArrayList<>(  );
+        resultRows = new ArrayList<>();
       }
 
       resultRows.clear();
@@ -231,9 +238,9 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
       }
 
     } catch ( Exception e ) {
-      e.printStackTrace();
       numErrors.inc();
       LOG.info( "Parse error on " + processContext.element() + ", " + e.getMessage() );
+      throw new RuntimeException( "Error executing StepFn", e );
     }
   }
 

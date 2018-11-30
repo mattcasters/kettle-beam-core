@@ -89,10 +89,9 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
       return PDone.in(input.getPipeline());
 
     } catch ( Exception e ) {
-      e.printStackTrace();
       numErrors.inc();
-      LOG.error( "Error in beam input transform", e );
-      throw new RuntimeException( "Error in beam input transform", e );
+      LOG.error( "Error in beam output transform", e );
+      throw new RuntimeException( "Error in beam output transform", e );
     }
   }
 

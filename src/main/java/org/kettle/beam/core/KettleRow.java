@@ -13,138 +13,53 @@ public class KettleRow implements Serializable {
     this.row = row;
   }
 
-  /*
-  private void writeObject( ObjectOutputStream out ) throws IOException {
 
-    // Length
-    //
-    if ( row == null ) {
-      out.writeInt( -1 );
-      return; // all done
-    } else {
-      out.writeInt( row.length );
+  @Override public boolean equals( Object obj ) {
+    if (!(obj instanceof KettleRow)) {
+      return false;
     }
+    if (this == obj) {
+      return true;
+    }
+    KettleRow otherKettleRow = (KettleRow) obj;
 
-    // The values
-    //
-    for ( int i = 0; i < row.length; i++ ) {
-      Object object = row[ i ];
-      // Null?
-      //
-      out.writeBoolean( object == null );
-
-      if ( object != null ) {
-        // Type?
-        //
-        int objectType = getObjectType( object );
-        out.writeInt( objectType );
-
-        // The object itself
-        //
-        write( out, objectType, object );
+    Object[] thisRow = row;
+    Object[] otherRow = otherKettleRow.getRow();
+    if (thisRow==null && otherRow==null) {
+      return true;
+    }
+    if ( (thisRow==null && otherRow!=null) || (thisRow!=null && otherRow==null)) {
+      return false;
+    }
+    if (thisRow.length!=otherRow.length) {
+      return false;
+    }
+    for (int i=0;i<thisRow.length;i++) {
+      Object thisValue = thisRow[i];
+      Object otherValue = otherRow[i];
+      if ((thisValue==null && otherValue!=null ) || (thisValue!=null && otherValue==null)) {
+        return false;
+      }
+      if (thisValue!=null && otherValue!=null && !thisValue.equals( otherValue )) {
+        return false;
       }
     }
+    return true;
   }
 
-  private void write( ObjectOutputStream out, int objectType, Object object ) throws IOException {
-    switch ( objectType ) {
-      case ValueMetaInterface.TYPE_STRING: {
-        String string = (String) object;
-        out.writeUTF( string );
-      }
-      break;
-      case ValueMetaInterface.TYPE_INTEGER: {
-        Long lng = (Long) object;
-        out.writeLong( lng );
-      }
-      break;
-      case ValueMetaInterface.TYPE_DATE: {
-        Long lng = ( (Date) object ).getTime();
-        out.writeLong( lng );
-      }
-      break;
-      case ValueMetaInterface.TYPE_BOOLEAN: {
-        Long lng = ( (Date) object ).getTime();
-        out.writeLong( lng );
-      }
-      break;
-      default:
-        throw new IOException( "Data type not supported yet: " + objectType + " - " + object.toString() );
+  @Override public int hashCode() {
+    if (row==null) {
+      return 0;
     }
+    int hashValue = 0;
+    for (int i=0;i<row.length;i++) {
+      if (row[i]!=null) {
+        hashValue^=row[i].hashCode();
+      }
+    }
+    return hashValue;
   }
 
-  private int getObjectType( Object object ) {
-    if ( object instanceof String ) {
-      return ValueMetaInterface.TYPE_STRING;
-    }
-    if ( object instanceof Long ) {
-      return ValueMetaInterface.TYPE_INTEGER;
-    }
-    if ( object instanceof Date ) {
-      return ValueMetaInterface.TYPE_DATE;
-    }
-    if ( object instanceof Timestamp ) {
-      return ValueMetaInterface.TYPE_TIMESTAMP;
-    }
-    if ( object instanceof Boolean ) {
-      return ValueMetaInterface.TYPE_BOOLEAN;
-    }
-    if ( object instanceof BigDecimal ) {
-      return ValueMetaInterface.TYPE_BIGNUMBER;
-    }
-    return -1;
-  }
-
-  private void readObject( ObjectInputStream in ) throws IOException, ClassNotFoundException {
-    row = null;
-    int length = in.readInt();
-    if ( length < 0 ) {
-      return;
-    }
-    row = new Object[ length ];
-    for ( int i = 0; i < length; i++ ) {
-      // Null?
-      boolean isNull = in.readBoolean();
-      if ( !isNull ) {
-        int objectType = in.readInt();
-        Object object = read( in, objectType );
-        row[i] = object;
-      }
-    }
-  }
-
-  private Object read( ObjectInputStream in, int objectType ) throws IOException {
-    switch ( objectType ) {
-      case ValueMetaInterface.TYPE_STRING: {
-        String string = in.readUTF();
-        return string;
-      }
-
-      case ValueMetaInterface.TYPE_INTEGER: {
-        Long lng = in.readLong();
-        return lng;
-      }
-
-      case ValueMetaInterface.TYPE_DATE: {
-        Long lng = in.readLong();
-        return new Date(lng);
-      }
-
-      case ValueMetaInterface.TYPE_BOOLEAN: {
-        boolean b = in.readBoolean();
-        return b;
-      }
-
-      default:
-        throw new IOException( "Data type not supported yet: " + objectType );
-    }
-  }
-
-  private void readObjectNoData() throws ObjectStreamException {
-    row = new Object[ 0 ];
-  }
-
-*/
 
   /**
    * Gets row

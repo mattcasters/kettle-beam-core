@@ -58,10 +58,9 @@ public class StepTransform  extends PTransform<PCollection<KettleRow>, PCollecti
       return output;
 
     } catch ( Exception e ) {
-      e.printStackTrace();
       numErrors.inc();
       LOG.error("Error transforming data in step '"+ stepname +"'", e);
-      return null;
+      throw new RuntimeException( "Error transforming data in step", e );
     }
 
   }

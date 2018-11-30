@@ -87,7 +87,6 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
 
       return output;
     } catch(Exception e) {
-      e.printStackTrace();
       numErrors.inc();
       LOG.error( "Error in group by transform", e );
       throw new RuntimeException( "Error in group by transform", e );

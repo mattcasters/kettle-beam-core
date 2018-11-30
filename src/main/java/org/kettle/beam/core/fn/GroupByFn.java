@@ -94,7 +94,7 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
                 }
               }
               break;
-            case COUNT:
+            case COUNT_ALL:
               if (subject!=null) {
                 if (result==null){
                   result = Long.valueOf( 1L );
@@ -129,7 +129,6 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
       processContext.output( new KettleRow( resultRow ) );
 
     } catch(Exception e) {
-      e.printStackTrace();
       numErrors.inc();
       LOG.error("Error grouping by ", e);
       throw new RuntimeException( "Unable to split row into group and subject ", e );

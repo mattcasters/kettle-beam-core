@@ -61,10 +61,9 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
         ;
 
     } catch ( Exception e ) {
-      e.printStackTrace();
       numErrors.inc();
       LOG.error( "Error in beam input transform", e );
-      return null;
+      throw new RuntimeException( "Error in beam input transform", e );
     }
 
   }

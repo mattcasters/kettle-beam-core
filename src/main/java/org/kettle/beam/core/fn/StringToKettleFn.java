@@ -75,12 +75,10 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
       processContext.output( new KettleRow( row ) );
 
     } catch ( Exception e ) {
-      e.printStackTrace();
-      // Failure failure = new Failure(StringToKettleFn.class.getName(), Const.getStackTracker(e), inputString);
-      // processContext.output( "failure", failure );
-
       numParseErrors.inc();
-      LOG.error( "Parse error on " + processContext.element() + ", " + e.getMessage() );
+      LOG.error( "Error converting input data into Kettle rows " + processContext.element() + ", " + e.getMessage() );
+      throw new RuntimeException( "Error converting input data into Kettle rows", e );
+
     }
   }
 
