@@ -3,8 +3,10 @@ package org.kettle.beam.core.fn;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.commons.lang.StringUtils;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
+import org.kettle.beam.core.shared.VariableValue;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.logging.LogLevel;
@@ -38,10 +40,12 @@ import java.util.List;
 public class StepFn extends DoFn<KettleRow, KettleRow> {
 
   public static final String INJECTOR_STEP_NAME = "_INJECTOR_";
-  private String stepname;
-  private String stepPluginId;
-  private String stepMetaInterfaceXml;
-  private String rowMetaXml;
+
+  protected List<VariableValue> variableValues;
+  protected String stepname;
+  protected String stepPluginId;
+  protected String stepMetaInterfaceXml;
+  protected String rowMetaXml;
 
   // Log and count parse errors.
   private static final Logger LOG = LoggerFactory.getLogger( StepFn.class );
@@ -70,10 +74,12 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
     // Don't expect this to be called.
     //
     resultRows = new ArrayList<>();
+    variableValues = new ArrayList<>(  );
   }
 
-  public StepFn( String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaXml) throws KettleException, IOException {
+  public StepFn( List<VariableValue> variableValues, String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaXml) throws KettleException, IOException {
     this();
+    this.variableValues = variableValues;
     this.stepname = stepname;
     this.stepPluginId = stepPluginId;
     this.stepMetaInterfaceXml = stepMetaInterfaceXml;
@@ -95,6 +101,14 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
         //
         transMeta = new TransMeta();
         transMeta.setTransformationType( TransMeta.TransformationType.SingleThreaded );
+
+        // Give steps variables from above
+        //
+        for (VariableValue variableValue : variableValues) {
+          if ( StringUtils.isNotEmpty(variableValue.getVariable())) {
+            transMeta.setVariable( variableValue.getVariable(), variableValue.getValue() );
+          }
+        }
 
         // Input row metadata...
         //
