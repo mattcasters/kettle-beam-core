@@ -64,7 +64,7 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
 
       // We read a bunch of Strings, one per line basically
       //
-      PCollection<String> stringCollection = input.apply( stepname + " READ FILE", ParDo.of( new KettleToStringFn( outputLocation, separator, enclosure, rowMetaXml ) ) );
+      PCollection<String> stringCollection = input.apply( stepname, ParDo.of( new KettleToStringFn( outputLocation, separator, enclosure, rowMetaXml ) ) );
 
       // We need to transform these lines into a file and then we're PDone
       //
