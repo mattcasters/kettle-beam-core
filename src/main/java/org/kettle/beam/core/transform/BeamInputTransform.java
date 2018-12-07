@@ -46,7 +46,7 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
       //
       BeamKettle.init();
 
-      return input
+      PCollection<KettleRow> output = input
 
         // We read a bunch of Strings, one per line basically
         //
@@ -54,11 +54,9 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
 
         // We need to transform these lines into Kettle fields
         //
-        .apply( stepname + " PARSE FILE", ParDo.of( new StringToKettleFn( rowMetaXml, separator ) ) )
+        .apply( stepname, ParDo.of( new StringToKettleFn( rowMetaXml, separator ) ) );
 
-        // From here on out the pipeline contains KettleRow
-        //
-        ;
+      return output;
 
     } catch ( Exception e ) {
       numErrors.inc();
@@ -67,4 +65,6 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
     }
 
   }
+
+
 }
