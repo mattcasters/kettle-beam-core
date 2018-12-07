@@ -13,6 +13,7 @@ import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaString;
 import org.pentaho.di.core.xml.XMLHandler;
+import org.pentaho.di.core.xml.XMLHandlerCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +35,7 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
 
   private transient RowMetaInterface rowMeta;
 
-  public StringToKettleFn( String rowMetaXml, String separator, List<String> stepPluginClasses, List<String> xpPluginClasses) {
+  public StringToKettleFn( String rowMetaXml, String separator, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.rowMetaXml = rowMetaXml;
     this.separator = separator;
     this.stepPluginClasses = stepPluginClasses;
@@ -56,11 +57,14 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
 
         // Just to make sure
         //
-        BeamKettle.init(stepPluginClasses, xpPluginClasses);
+        BeamKettle.init( stepPluginClasses, xpPluginClasses );
 
-        rowMeta = new RowMeta( XMLHandler.getSubNode(XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG) );
-        readCounter = Metrics.counter( "read", "INPUT");
-        writtenCounter = Metrics.counter( "written", "INPUT");
+        synchronized ( XMLHandlerCache.getInstance() ) {
+          rowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
+          XMLHandlerCache.getInstance().clear();
+        }
+        readCounter = Metrics.counter( "read", "INPUT" );
+        writtenCounter = Metrics.counter( "written", "INPUT" );
       }
 
       Object[] row = RowDataUtil.allocateRowData( rowMeta.size() );

@@ -1,6 +1,5 @@
 package org.kettle.beam.core;
 
-import org.kettle.beam.core.transform.StepTransform;
 import org.pentaho.di.core.KettleEnvironment;
 import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.exception.KettleException;
@@ -29,66 +28,64 @@ public class BeamKettle {
   public static final void init( List<String> stepPluginClasses, List<String> xpPluginClasses ) throws KettleException {
     PluginRegistry registry = PluginRegistry.getInstance();
     synchronized ( registry ) {
-      if ( !KettleEnvironment.isInitialized() ) {
 
-        // Load Kettle base plugins
-        //
-        KettleEnvironment.init();
+      // Load Kettle base plugins
+      //
+      KettleEnvironment.init();
 
-        XMLHandlerCache.getInstance();
+      XMLHandlerCache.getInstance();
 
-        LOG.info("Registering "+stepPluginClasses.size()+" extra step plugins, and "+xpPluginClasses.size()+" XP plugins");
+      LOG.info( "Registering " + stepPluginClasses.size() + " extra step plugins, and " + xpPluginClasses.size() + " XP plugins" );
 
-        // Register extra classes from the plugins...
-        // If they're already in the classpath, this should be fast.
-        //
-        StepPluginType stepPluginType = (StepPluginType) registry.getPluginType( StepPluginType.class );
-        for ( String stepPluginClassName : stepPluginClasses ) {
-          try {
-            // Only register if it doesn't exist yet.  This is not ideal if we want to replace old steps with bug fixed new ones.
+      // Register extra classes from the plugins...
+      // If they're already in the classpath, this should be fast.
+      //
+      StepPluginType stepPluginType = (StepPluginType) registry.getPluginType( StepPluginType.class );
+      for ( String stepPluginClassName : stepPluginClasses ) {
+        try {
+          // Only register if it doesn't exist yet.  This is not ideal if we want to replace old steps with bug fixed new ones.
+          //
+          PluginInterface exists = findPlugin( registry, StepPluginType.class, stepPluginClassName );
+          if ( exists == null ) {
+            // Class should be in the classpath since we put it there
             //
-            PluginInterface exists = findPlugin( registry, StepPluginType.class, stepPluginClassName );
-            if ( exists == null ) {
-              // Class should be in the classpath since we put it there
-              //
-              Class<?> stepPluginClass = Class.forName( stepPluginClassName );
-              Step annotation = stepPluginClass.getAnnotation( Step.class );
+            Class<?> stepPluginClass = Class.forName( stepPluginClassName );
+            Step annotation = stepPluginClass.getAnnotation( Step.class );
 
-              // The plugin class is already in the classpath so we simply call Class.forName() on it.
-              //
-              LOG.info( "Registering step plugin class: "+stepPluginClass );
-              stepPluginType.handlePluginAnnotation( stepPluginClass, annotation, new ArrayList<String>(), true, null );
-            } else {
-              LOG.debug( "Plugin " + stepPluginClassName + " is already registered" );
-            }
-          } catch ( Exception e ) {
-            LOG.error( "Error registering step plugin class : " + stepPluginClassName, e );
+            // The plugin class is already in the classpath so we simply call Class.forName() on it.
+            //
+            LOG.info( "Registering step plugin class: " + stepPluginClass );
+            stepPluginType.handlePluginAnnotation( stepPluginClass, annotation, new ArrayList<String>(), true, null );
+          } else {
+            LOG.debug( "Plugin " + stepPluginClassName + " is already registered" );
           }
+        } catch ( Exception e ) {
+          LOG.error( "Error registering step plugin class : " + stepPluginClassName, e );
         }
+      }
 
-        ExtensionPointPluginType xpPluginType = (ExtensionPointPluginType) registry.getPluginType( ExtensionPointPluginType.class );
-        for ( String xpPluginClassName : xpPluginClasses ) {
-          try {
-            PluginInterface exists = findPlugin( registry, ExtensionPointPluginType.class, xpPluginClassName );
-            // Only register if it doesn't exist yet. This is not ideal if we want to replace old steps with bug fixed new ones.
+      ExtensionPointPluginType xpPluginType = (ExtensionPointPluginType) registry.getPluginType( ExtensionPointPluginType.class );
+      for ( String xpPluginClassName : xpPluginClasses ) {
+        try {
+          PluginInterface exists = findPlugin( registry, ExtensionPointPluginType.class, xpPluginClassName );
+          // Only register if it doesn't exist yet. This is not ideal if we want to replace old steps with bug fixed new ones.
+          //
+          if ( exists == null ) {
+            // Class should be in the classpath since we put it there
             //
-            if ( exists == null ) {
-              // Class should be in the classpath since we put it there
-              //
-              Class<?> xpPluginClass = Class.forName( xpPluginClassName );
-              ExtensionPoint annotation = xpPluginClass.getAnnotation( ExtensionPoint.class );
+            Class<?> xpPluginClass = Class.forName( xpPluginClassName );
+            ExtensionPoint annotation = xpPluginClass.getAnnotation( ExtensionPoint.class );
 
-              // The plugin class is already in the classpath so we simply call Class.forName() on it.
-              //
-              LOG.info( "Registering step plugin class: "+xpPluginClass );
-              xpPluginType.handlePluginAnnotation( xpPluginClass, annotation, new ArrayList<String>(), true, null );
-            } else {
-              LOG.debug( "Plugin " + xpPluginClassName + " is already registered" );
-            }
-          } catch ( Exception e ) {
-            LOG.error( "Error registering step plugin class : " + xpPluginClassName, e );
-
+            // The plugin class is already in the classpath so we simply call Class.forName() on it.
+            //
+            LOG.info( "Registering step plugin class: " + xpPluginClass );
+            xpPluginType.handlePluginAnnotation( xpPluginClass, annotation, new ArrayList<String>(), true, null );
+          } else {
+            LOG.debug( "Plugin " + xpPluginClassName + " is already registered" );
           }
+        } catch ( Exception e ) {
+          LOG.error( "Error registering step plugin class : " + xpPluginClassName, e );
+
         }
       }
     }

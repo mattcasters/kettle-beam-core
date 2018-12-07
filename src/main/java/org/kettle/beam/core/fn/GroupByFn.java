@@ -13,6 +13,7 @@ import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.xml.XMLHandler;
+import org.pentaho.di.core.xml.XMLHandlerCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,9 +55,12 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
 
         BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
-        groupRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( groupRowMetaXml ), RowMeta.XML_META_TAG ) );
-        subjectRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( subjectRowMetaXml ), RowMeta.XML_META_TAG ) );
-
+        synchronized ( XMLHandlerCache.getInstance() ) {
+          groupRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( groupRowMetaXml ), RowMeta.XML_META_TAG ) );
+          XMLHandlerCache.getInstance().clear();
+          subjectRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( subjectRowMetaXml ), RowMeta.XML_META_TAG ) );
+          XMLHandlerCache.getInstance().clear();
+        }
         aggregationTypes = new AggregationType[aggregations.length];
         for ( int i = 0; i < aggregationTypes.length; i++ ) {
           aggregationTypes[ i ] = AggregationType.getTypeFromName( aggregations[ i ] );

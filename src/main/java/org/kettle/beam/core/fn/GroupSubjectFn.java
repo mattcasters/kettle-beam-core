@@ -11,6 +11,7 @@ import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.xml.XMLHandler;
+import org.pentaho.di.core.xml.XMLHandlerCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +65,10 @@ public class GroupSubjectFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> {
         //
         BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
-        inputRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( inputRowMetaXml ), RowMeta.XML_META_TAG ) );
+        synchronized ( XMLHandlerCache.getInstance() ) {
+          inputRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( inputRowMetaXml ), RowMeta.XML_META_TAG ) );
+          XMLHandlerCache.getInstance().clear();
+        }
 
         // Construct the group row metadata
         //

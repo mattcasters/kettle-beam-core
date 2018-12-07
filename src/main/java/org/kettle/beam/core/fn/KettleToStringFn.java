@@ -9,10 +9,10 @@ import org.kettle.beam.core.KettleRow;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.xml.XMLHandler;
+import org.pentaho.di.core.xml.XMLHandlerCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.List;
 
 public class KettleToStringFn extends DoFn<KettleRow, String> {
@@ -52,11 +52,14 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
 
         // Just to make sure
         //
-        BeamKettle.init(stepPluginClasses, xpPluginClasses);
+        BeamKettle.init( stepPluginClasses, xpPluginClasses );
 
-        rowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
+        synchronized ( XMLHandlerCache.getInstance() ) {
+          rowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
+          XMLHandlerCache.getInstance().clear();
+        }
         readCounter = Metrics.counter( "read", "OUTPUT" );
-        writtenCounter = Metrics.counter( "written", "OUTPUT");
+        writtenCounter = Metrics.counter( "written", "OUTPUT" );
       }
 
       // Just a quick and dirty output for now...

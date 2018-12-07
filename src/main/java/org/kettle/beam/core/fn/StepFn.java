@@ -19,6 +19,7 @@ import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.xml.XMLHandler;
+import org.pentaho.di.core.xml.XMLHandlerCache;
 import org.pentaho.di.trans.RowProducer;
 import org.pentaho.di.trans.SingleThreadedTransExecutor;
 import org.pentaho.di.trans.Trans;
@@ -59,8 +60,8 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
   private static final Logger LOG = LoggerFactory.getLogger( StepFn.class );
   private final Counter numErrors = Metrics.counter( "main", "StepProcessErrors" );
 
-  private transient TransMeta transMeta = g;
-  private transient StepMeta stepMeta = null;
+  private transient TransMeta transMeta;
+  private transient StepMeta stepMeta;
   private transient RowMetaInterface inputRowMeta;
   private transient RowMetaInterface outputRowMeta;
   private transient List<StepMetaDataCombi> stepCombis;
@@ -133,8 +134,10 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
 
         // Input row metadata...
         //
-        inputRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
-
+        synchronized ( XMLHandlerCache.getInstance() ) {
+          inputRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
+          XMLHandlerCache.getInstance().clear();
+        }
         // Create an Injector step with the right row layout...
         // This will help all steps see the row layout statically...
         //
