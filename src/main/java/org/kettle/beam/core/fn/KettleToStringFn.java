@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 
 public class KettleToStringFn extends DoFn<KettleRow, String> {
 
@@ -20,6 +21,8 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
   private String separator;
   private String enclosure;
   private String rowMetaXml;
+  private List<String> stepPluginClasses;
+  private List<String> xpPluginClasses;
 
   private transient RowMetaInterface rowMeta;
   private transient Counter readCounter;
@@ -29,11 +32,13 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
   private static final Logger LOG = LoggerFactory.getLogger( KettleToStringFn.class );
   private final Counter numParseErrors = Metrics.counter( "main", "ParseErrors" );
 
-  public KettleToStringFn( String outputLocation, String separator, String enclosure, String rowMetaXml ) {
+  public KettleToStringFn( String outputLocation, String separator, String enclosure, String rowMetaXml, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.outputLocation = outputLocation;
     this.separator = separator;
     this.enclosure = enclosure;
     this.rowMetaXml = rowMetaXml;
+    this.stepPluginClasses = stepPluginClasses;
+    this.xpPluginClasses = xpPluginClasses;
   }
 
   @ProcessElement
@@ -42,10 +47,13 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
 
     try {
 
-      // Just to make sure
-      BeamKettle.init();
 
       if ( rowMeta == null ) {
+
+        // Just to make sure
+        //
+        BeamKettle.init(stepPluginClasses, xpPluginClasses);
+
         rowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
         readCounter = Metrics.counter( "read", "OUTPUT" );
         writtenCounter = Metrics.counter( "written", "OUTPUT");

@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.List;
 
 public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDone> {
 
@@ -29,6 +30,8 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
   private String separator;
   private String enclosure;
   private String rowMetaXml;
+  private List<String> stepPluginClasses;
+  private List<String> xpPluginClasses;
 
   // Log and count errors.
   private static final Logger LOG = LoggerFactory.getLogger( BeamOutputTransform.class );
@@ -37,7 +40,7 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
   public BeamOutputTransform() {
   }
 
-  public BeamOutputTransform( String stepname, String outputLocation, String filePrefix, String fileSuffix, String separator, String enclosure, String rowMetaXml ) {
+  public BeamOutputTransform( String stepname, String outputLocation, String filePrefix, String fileSuffix, String separator, String enclosure, String rowMetaXml, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.stepname = stepname;
     this.outputLocation = outputLocation;
     this.filePrefix = filePrefix;
@@ -45,6 +48,8 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
     this.separator = separator;
     this.enclosure = enclosure;
     this.rowMetaXml = rowMetaXml;
+    this.stepPluginClasses = stepPluginClasses;
+    this.xpPluginClasses = xpPluginClasses;
   }
 
   @Override public PDone expand( PCollection<KettleRow> input ) {
@@ -52,7 +57,7 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
     try {
       // Only initialize once on this node/vm
       //
-      BeamKettle.init();
+      BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
       // Inflate the metadata on the node where this is running...
       //
@@ -64,7 +69,7 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
 
       // We read a bunch of Strings, one per line basically
       //
-      PCollection<String> stringCollection = input.apply( stepname, ParDo.of( new KettleToStringFn( outputLocation, separator, enclosure, rowMetaXml ) ) );
+      PCollection<String> stringCollection = input.apply( stepname, ParDo.of( new KettleToStringFn( outputLocation, separator, enclosure, rowMetaXml, stepPluginClasses, xpPluginClasses ) ) );
 
       // We need to transform these lines into a file and then we're PDone
       //

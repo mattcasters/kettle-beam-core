@@ -21,6 +21,8 @@ import org.pentaho.di.core.xml.XMLHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollection<KettleRow>> {
 
   // The non-transient methods are serializing
@@ -31,6 +33,8 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
   private String[] subjects; // The subjects to aggregate on
   private String[] aggregations; // The aggregation types
   private String[] resultFields; // The result fields
+  private List<String> stepPluginClasses;
+  private List<String> xpPluginClasses;
 
   private static final Logger LOG = LoggerFactory.getLogger( GroupByTransform.class );
   private final Counter numErrors = Metrics.counter( "main", "GroupByTransformErrors" );
@@ -42,8 +46,10 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
   public GroupByTransform() {
   }
 
-  public GroupByTransform( String rowMetaXml, String[] groupFields, String[] subjects, String[] aggregations, String[] resultFields) {
+  public GroupByTransform( String rowMetaXml, List<String> stepPluginClasses, List<String> xpPluginClasses, String[] groupFields, String[] subjects, String[] aggregations, String[] resultFields) {
     this.rowMetaXml = rowMetaXml;
+    this.stepPluginClasses = stepPluginClasses;
+    this.xpPluginClasses = xpPluginClasses;
     this.groupFields = groupFields;
     this.subjects = subjects;
     this.aggregations = aggregations;
@@ -51,10 +57,9 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
   }
 
   @Override public PCollection<KettleRow> expand( PCollection<KettleRow> input ) {
-
     try {
       if ( inputRowMeta == null ) {
-        BeamKettle.init();
+        BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
         inputRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
 
@@ -71,7 +76,7 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
 
       // Split the KettleRow into GroupFields-KettleRow and SubjectFields-KettleRow
       //
-      PCollection<KV<KettleRow, KettleRow>> groupSubjects = input.apply( ParDo.of( new GroupSubjectFn( rowMetaXml, groupFields, subjects ) ) );
+      PCollection<KV<KettleRow, KettleRow>> groupSubjects = input.apply( ParDo.of( new GroupSubjectFn( rowMetaXml, stepPluginClasses, xpPluginClasses, groupFields, subjects ) ) );
 
       // Now we need to aggregate the groups with a Combine
       GroupByKey<KettleRow, KettleRow> byKey = GroupByKey.<KettleRow, KettleRow>create();
@@ -83,7 +88,7 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
       //   We need to calcualte the aggregation of these subject lists
       //   Then we output group values with result values behind it.
       //
-      PCollection<KettleRow> output = grouped.apply( ParDo.of( new GroupByFn( groupRowMeta.getMetaXML(), subjectRowMeta.getMetaXML(), aggregations ) ) );
+      PCollection<KettleRow> output = grouped.apply( ParDo.of( new GroupByFn( groupRowMeta.getMetaXML(), stepPluginClasses, xpPluginClasses, subjectRowMeta.getMetaXML(), aggregations ) ) );
 
       return output;
     } catch(Exception e) {

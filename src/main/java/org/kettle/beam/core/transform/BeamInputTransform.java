@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.List;
 
 public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow>> {
 
@@ -23,6 +24,8 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
   private String inputLocation;
   private String separator;
   private String rowMetaXml;
+  private List<String> stepPluginClasses;
+  private List<String> xpPluginClasses;
 
   // Log and count errors.
   private static final Logger LOG = LoggerFactory.getLogger( BeamInputTransform.class );
@@ -31,12 +34,14 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
   public BeamInputTransform() {
   }
 
-  public BeamInputTransform( @Nullable String name, String stepname, String inputLocation, String separator, String rowMetaXml ) {
+  public BeamInputTransform( @Nullable String name, String stepname, String inputLocation, String separator, String rowMetaXml, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     super( name );
     this.stepname = stepname;
     this.inputLocation = inputLocation;
     this.separator = separator;
     this.rowMetaXml = rowMetaXml;
+    this.stepPluginClasses = stepPluginClasses;
+    this.xpPluginClasses = xpPluginClasses;
   }
 
   @Override public PCollection<KettleRow> expand( PBegin input ) {
@@ -44,7 +49,7 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
     try {
       // Only initialize once on this node/vm
       //
-      BeamKettle.init();
+      BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
       PCollection<KettleRow> output = input
 
@@ -54,7 +59,7 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
 
         // We need to transform these lines into Kettle fields
         //
-        .apply( stepname, ParDo.of( new StringToKettleFn( rowMetaXml, separator ) ) );
+        .apply( stepname, ParDo.of( new StringToKettleFn( rowMetaXml, separator, stepPluginClasses, xpPluginClasses ) ) );
 
       return output;
 

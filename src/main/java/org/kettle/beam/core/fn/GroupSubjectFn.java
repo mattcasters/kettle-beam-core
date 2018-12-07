@@ -14,11 +14,15 @@ import org.pentaho.di.core.xml.XMLHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 // Split a row into group and subject parts
 //
 public class GroupSubjectFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> {
 
   private String inputRowMetaXml;
+  private List<String> stepPluginClasses;
+  private List<String> xpPluginClasses;
   private String[] groupFields;
   private String[] subjectFields;
 
@@ -39,8 +43,10 @@ public class GroupSubjectFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> {
   public GroupSubjectFn() {
   }
 
-  public GroupSubjectFn( String inputRowMetaXml, String[] groupFields, String[] subjectFields /*, String[] aggregations, String[] resultFields */ ) {
+  public GroupSubjectFn( String inputRowMetaXml, List<String> stepPluginClasses, List<String> xpPluginClasses, String[] groupFields, String[] subjectFields /*, String[] aggregations, String[] resultFields */ ) {
     this.inputRowMetaXml = inputRowMetaXml;
+    this.stepPluginClasses = stepPluginClasses;
+    this.xpPluginClasses = xpPluginClasses;
     this.groupFields = groupFields;
     this.subjectFields = subjectFields;
     // this.aggregations = aggregations;
@@ -52,11 +58,12 @@ public class GroupSubjectFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> {
 
     try {
 
-      BeamKettle.init();
-
       if ( inputRowMeta == null ) {
+
         // Initialize
         //
+        BeamKettle.init(stepPluginClasses, xpPluginClasses);
+
         inputRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( inputRowMetaXml ), RowMeta.XML_META_TAG ) );
 
         // Construct the group row metadata

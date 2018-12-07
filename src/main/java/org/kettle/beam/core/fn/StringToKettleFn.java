@@ -16,10 +16,14 @@ import org.pentaho.di.core.xml.XMLHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+
 public class StringToKettleFn extends DoFn<String, KettleRow> {
 
   private String rowMetaXml;
   private String separator;
+  private List<String> stepPluginClasses;
+  private List<String> xpPluginClasses;
 
   private transient Counter readCounter;
   private transient Counter writtenCounter;
@@ -30,9 +34,11 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
 
   private transient RowMetaInterface rowMeta;
 
-  public StringToKettleFn( String rowMetaXml, String separator) {
+  public StringToKettleFn( String rowMetaXml, String separator, List<String> stepPluginClasses, List<String> xpPluginClasses) {
     this.rowMetaXml = rowMetaXml;
     this.separator = separator;
+    this.stepPluginClasses = stepPluginClasses;
+    this.xpPluginClasses = xpPluginClasses;
   }
 
   @ProcessElement
@@ -46,10 +52,12 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
     //
     try {
 
-      // Just to make sure
-      BeamKettle.init();
-
       if ( rowMeta == null ) {
+
+        // Just to make sure
+        //
+        BeamKettle.init(stepPluginClasses, xpPluginClasses);
+
         rowMeta = new RowMeta( XMLHandler.getSubNode(XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG) );
         readCounter = Metrics.counter( "read", "INPUT");
         writtenCounter = Metrics.counter( "written", "INPUT");

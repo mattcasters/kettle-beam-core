@@ -7,6 +7,7 @@ import org.apache.beam.sdk.values.TupleTag;
 import org.apache.commons.lang.StringUtils;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
+import org.kettle.beam.core.metastore.SerializableMetaStore;
 import org.kettle.beam.core.shared.VariableValue;
 import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
@@ -31,11 +32,11 @@ import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.di.trans.steps.dummytrans.DummyTransMeta;
 import org.pentaho.di.trans.steps.injector.InjectorMeta;
 import org.pentaho.metastore.api.IMetaStore;
-import org.pentaho.metastore.stores.memory.MemoryMetaStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +46,9 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
   public static final String INJECTOR_STEP_NAME = "_INJECTOR_";
 
   protected List<VariableValue> variableValues;
+  protected String metastoreJson;
+  protected List<String> stepPluginClasses;
+  protected List<String> xpPluginClasses;
   protected String stepname;
   protected String stepPluginId;
   protected String stepMetaInterfaceXml;
@@ -55,7 +59,7 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
   private static final Logger LOG = LoggerFactory.getLogger( StepFn.class );
   private final Counter numErrors = Metrics.counter( "main", "StepProcessErrors" );
 
-  private transient TransMeta transMeta = null;
+  private transient TransMeta transMeta = g;
   private transient StepMeta stepMeta = null;
   private transient RowMetaInterface inputRowMeta;
   private transient RowMetaInterface outputRowMeta;
@@ -83,10 +87,14 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
     variableValues = new ArrayList<>();
   }
 
-  public StepFn( List<VariableValue> variableValues, String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaXml, List<String> targetSteps )
+  public StepFn( List<VariableValue> variableValues, String metastoreJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaXml,
+                 List<String> targetSteps )
     throws KettleException, IOException {
     this();
     this.variableValues = variableValues;
+    this.metastoreJson = metastoreJson;
+    this.stepPluginClasses = stepPluginClasses;
+    this.xpPluginClasses = xpPluginClasses;
     this.stepname = stepname;
     this.stepPluginId = stepPluginId;
     this.stepMetaInterfaceXml = stepMetaInterfaceXml;
@@ -101,12 +109,13 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
 
       if ( transMeta == null ) {
 
-        // Just to make sure
-        BeamKettle.init();
-
-        // TODO: pass in real metastore objects through JSON serialization
+        // Initialize Kettle and load extra plugins as well
         //
-        IMetaStore metaStore = new MemoryMetaStore();
+        BeamKettle.init(stepPluginClasses, xpPluginClasses);
+
+        // The content of the metastore is JSON serialized and inflated below.
+        //
+        IMetaStore metaStore = new SerializableMetaStore(metastoreJson);
 
         // Create a very simple new transformation to run single threaded...
         // Single threaded...
@@ -163,7 +172,22 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
         //
         PluginRegistry registry = PluginRegistry.getInstance();
         StepMetaInterface stepMetaInterface = registry.loadClass( StepPluginType.class, stepPluginId, StepMetaInterface.class );
-        stepMetaInterface.loadXML( XMLHandler.getSubNode( XMLHandler.loadXMLString( stepMetaInterfaceXml ), StepMeta.XML_TAG ), new ArrayList<>(), new MemoryMetaStore() );
+        if (stepMetaInterface==null) {
+          throw new KettleException( "Unable to load step plugin with ID "+stepPluginId+", this plugin isn't in the plugin registry or classpath" );
+        }
+        Document stepDocument = XMLHandler.loadXMLString( stepMetaInterfaceXml );
+        if (stepDocument==null) {
+          throw new KettleException( "Unable to load step XML document from : "+stepMetaInterfaceXml );
+        }
+        Node stepNode = XMLHandler.getSubNode( stepDocument, StepMeta.XML_TAG );
+        if (stepNode==null) {
+          throw new KettleException( "Unable to find XML tag "+StepMeta.XML_TAG+" from : "+stepMetaInterfaceXml );
+        }
+        try {
+          stepMetaInterface.loadXML( stepNode, new ArrayList<>(), metaStore );
+        } catch(Exception e) {
+          throw new KettleException( "There was an error loading step metadata information (loadXML) for step '"+stepname+"'", e );
+        }
         stepMeta = new StepMeta( stepname, stepMetaInterface );
         stepMeta.setStepID( stepPluginId );
         stepMeta.setLocation( 400, 200 );

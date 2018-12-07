@@ -26,6 +26,9 @@ import java.util.Map;
 public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectionTuple> {
 
   protected List<VariableValue> variableValues;
+  protected String metastoreJson;
+  protected List<String> stepPluginClasses;
+  protected List<String> xpPluginClasses;
   protected String stepname;
   protected String stepPluginId;
   protected String inputRowMetaXml;
@@ -40,9 +43,12 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     variableValues = new ArrayList<>();
   }
 
-  public StepTransform( List<VariableValue> variableValues, String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaXml, List<String> targetSteps )
+  public StepTransform( List<VariableValue> variableValues, String metastoreJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaXml, List<String> targetSteps )
     throws KettleException, IOException {
     this.variableValues = variableValues;
+    this.metastoreJson = metastoreJson;
+    this.stepPluginClasses = stepPluginClasses;
+    this.xpPluginClasses = xpPluginClasses;
     this.stepname = stepname;
     this.stepPluginId = stepPluginId;
     this.stepMetaInterfaceXml = stepMetaInterfaceXml;
@@ -55,7 +61,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
       // Only initialize once on this node/vm
       //
-      BeamKettle.init();
+      BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
       // Create a TupleTag list
       //
@@ -80,7 +86,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
       // Create a new step function, initializes the step
       //
-      StepFn stepFn = new StepFn( variableValues, stepname, stepPluginId, stepMetaInterfaceXml, inputRowMetaXml, targetSteps );
+      StepFn stepFn = new StepFn( variableValues, metastoreJson, stepPluginClasses, xpPluginClasses, stepname, stepPluginId, stepMetaInterfaceXml, inputRowMetaXml, targetSteps );
 
       PCollectionTuple collectionTuple = input.apply(
         ParDo
