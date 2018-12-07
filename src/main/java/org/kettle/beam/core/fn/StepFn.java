@@ -178,9 +178,11 @@ public class StepFn extends DoFn<KettleRow, KettleRow> {
         }
         stepMetaInterface.searchInfoAndTargetSteps( transMeta.getSteps() );
 
-        FileOutputStream fos = new FileOutputStream( "/tmp/" + stepname + ".ktr" );
-        fos.write( transMeta.getXML().getBytes() );
-        fos.close();
+        /*
+          FileOutputStream fos = new FileOutputStream( "/tmp/" + stepname + ".ktr" );
+          fos.write( transMeta.getXML().getBytes() );
+          fos.close();
+        */
 
         // This one is single threaded folks
         //
