@@ -40,31 +40,33 @@ public class KettleBeamUtil {
     return new KettleRow(newRow);
   }
 
+  private static Object object = new Object();
+
   public static RowMetaInterface convertFromRowMetaXml(String rowMetaXml) throws KettleException {
-    XMLHandlerCache cache = XMLHandlerCache.getInstance();
-    synchronized ( cache ) {
+    synchronized ( object ) {
       RowMetaInterface rowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
-      cache.clear();
+      XMLHandlerCache.getInstance().clear();
       return rowMeta;
     }
   }
 
   public static void loadStepMetadataFromXml( String stepname, StepMetaInterface stepMetaInterface, String stepMetaInterfaceXml, IMetaStore metaStore ) throws KettleException {
-    Document stepDocument = XMLHandler.loadXMLString( stepMetaInterfaceXml );
-    if ( stepDocument == null ) {
-      throw new KettleException( "Unable to load step XML document from : " + stepMetaInterfaceXml );
-    }
-    Node stepNode = XMLHandler.getSubNode( stepDocument, StepMeta.XML_TAG );
-    if ( stepNode == null ) {
-      throw new KettleException( "Unable to find XML tag " + StepMeta.XML_TAG + " from : " + stepMetaInterfaceXml );
-    }
-    try {
-      stepMetaInterface.loadXML( stepNode, new ArrayList<>(), metaStore );
-    } catch ( Exception e ) {
-      throw new KettleException( "There was an error loading step metadata information (loadXML) for step '" + stepname + "'", e );
-    }
-    finally {
-      XMLHandlerCache.getInstance().clear();
+    synchronized ( object ) {
+      Document stepDocument = XMLHandler.loadXMLString( stepMetaInterfaceXml );
+      if ( stepDocument == null ) {
+        throw new KettleException( "Unable to load step XML document from : " + stepMetaInterfaceXml );
+      }
+      Node stepNode = XMLHandler.getSubNode( stepDocument, StepMeta.XML_TAG );
+      if ( stepNode == null ) {
+        throw new KettleException( "Unable to find XML tag " + StepMeta.XML_TAG + " from : " + stepMetaInterfaceXml );
+      }
+      try {
+        stepMetaInterface.loadXML( stepNode, new ArrayList<>(), metaStore );
+      } catch ( Exception e ) {
+        throw new KettleException( "There was an error loading step metadata information (loadXML) for step '" + stepname + "'", e );
+      } finally {
+        XMLHandlerCache.getInstance().clear();
+      }
     }
   }
 }

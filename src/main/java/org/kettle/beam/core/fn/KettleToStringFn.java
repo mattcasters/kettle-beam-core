@@ -75,7 +75,7 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
         String valueString = rowMeta.getString( inputRow.getRow(), i );
         boolean enclose = false;
 
-        if ( StringUtils.isNotEmpty( enclosure ) ) {
+        if ( valueString!=null && StringUtils.isNotEmpty( enclosure ) ) {
           enclose = valueString.contains( enclosure );
         }
         if ( enclose ) {
