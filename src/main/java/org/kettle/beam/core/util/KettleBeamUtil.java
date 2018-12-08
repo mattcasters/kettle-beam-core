@@ -42,14 +42,6 @@ public class KettleBeamUtil {
 
   private static Object object = new Object();
 
-  public static RowMetaInterface convertFromRowMetaXml(String rowMetaXml) throws KettleException {
-    synchronized ( object ) {
-      RowMetaInterface rowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
-      XMLHandlerCache.getInstance().clear();
-      return rowMeta;
-    }
-  }
-
   public static void loadStepMetadataFromXml( String stepname, StepMetaInterface stepMetaInterface, String stepMetaInterfaceXml, IMetaStore metaStore ) throws KettleException {
     synchronized ( object ) {
       Document stepDocument = XMLHandler.loadXMLString( stepMetaInterfaceXml );

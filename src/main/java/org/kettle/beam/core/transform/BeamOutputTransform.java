@@ -196,16 +196,16 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
   }
 
   /**
-   * Gets rowMetaJson
+   * Gets inputRowMetaJson
    *
-   * @return value of rowMetaJson
+   * @return value of inputRowMetaJson
    */
   public String getRowMetaJson() {
     return rowMetaJson;
   }
 
   /**
-   * @param rowMetaJson The rowMetaJson to set
+   * @param rowMetaJson The inputRowMetaJson to set
    */
   public void setRowMetaJson( String rowMetaJson ) {
     this.rowMetaJson = rowMetaJson;

@@ -15,6 +15,7 @@ import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.metastore.SerializableMetaStore;
 import org.kettle.beam.core.shared.VariableValue;
+import org.kettle.beam.core.util.JsonRowMeta;
 import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
@@ -55,7 +56,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
   protected String stepMetaInterfaceXml;
   protected List<String> targetSteps;
   protected List<String> infoSteps;
-  protected List<String> infoRowMetaXmls;
+  protected List<String> infoRowMetaJsons;
 
   // Used in the private StepFn class below
   //
@@ -71,7 +72,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
   public StepTransform( List<VariableValue> variableValues, String metastoreJson, List<String> stepPluginClasses, List<String> xpPluginClasses,
                         String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaJson,
-                        List<String> targetSteps, List<String> infoSteps, List<String> infoRowMetaXmls, List<PCollectionView<List<KettleRow>>> infoCollectionViews ) {
+                        List<String> targetSteps, List<String> infoSteps, List<String> infoRowMetaJsons, List<PCollectionView<List<KettleRow>>> infoCollectionViews ) {
     this.variableValues = variableValues;
     this.metastoreJson = metastoreJson;
     this.stepPluginClasses = stepPluginClasses;
@@ -82,7 +83,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     this.inputRowMetaJson = inputRowMetaJson;
     this.targetSteps = targetSteps;
     this.infoSteps = infoSteps;
-    this.infoRowMetaXmls = infoRowMetaXmls;
+    this.infoRowMetaJsons = infoRowMetaJsons;
     this.infoCollectionViews = infoCollectionViews;
   }
 
@@ -117,7 +118,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
       //
       StepFn stepFn = new StepFn( variableValues, metastoreJson, stepPluginClasses, xpPluginClasses,
         stepname, stepPluginId, stepMetaInterfaceXml, inputRowMetaJson,
-        targetSteps, infoSteps, infoRowMetaXmls );
+        targetSteps, infoSteps, infoRowMetaJsons );
 
       // The actual step functionality
       //
@@ -161,10 +162,10 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     protected String stepname;
     protected String stepPluginId;
     protected String stepMetaInterfaceXml;
-    protected String rowMetaXml;
+    protected String inputRowMetaJson;
     protected List<String> targetSteps;
     protected List<String> infoSteps;
-    protected List<String> infoRowMetaXmls;
+    protected List<String> infoRowMetaJsons;
 
     protected List<PCollection<KettleRow>> infoCollections;
 
@@ -207,8 +208,8 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     //
 
     public StepFn( List<VariableValue> variableValues, String metastoreJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String stepname, String stepPluginId,
-                   String stepMetaInterfaceXml, String inputRowMetaXml,
-                   List<String> targetSteps, List<String> infoSteps, List<String> infoRowMetaXmls ) {
+                   String stepMetaInterfaceXml, String inputRowMetaJson,
+                   List<String> targetSteps, List<String> infoSteps, List<String> infoRowMetaJsons ) {
       this();
       this.variableValues = variableValues;
       this.metastoreJson = metastoreJson;
@@ -217,10 +218,10 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
       this.stepname = stepname;
       this.stepPluginId = stepPluginId;
       this.stepMetaInterfaceXml = stepMetaInterfaceXml;
-      this.rowMetaXml = inputRowMetaXml;
+      this.inputRowMetaJson = inputRowMetaJson;
       this.targetSteps = targetSteps;
       this.infoSteps = infoSteps;
-      this.infoRowMetaXmls = infoRowMetaXmls;
+      this.infoRowMetaJsons = infoRowMetaJsons;
     }
 
     @ProcessElement
@@ -254,11 +255,11 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
           // Input row metadata...
           //
-          inputRowMeta = KettleBeamUtil.convertFromRowMetaXml( rowMetaXml );
+          inputRowMeta = JsonRowMeta.fromJson( inputRowMetaJson );
           // System.out.println( "======== INPUT ROW META : "+inputRowMeta.toString() );
           infoRowMetas = new ArrayList<>();
-          for ( String infoRowMetaXml : infoRowMetaXmls ) {
-            RowMetaInterface infoRowMeta = KettleBeamUtil.convertFromRowMetaXml( infoRowMetaXml );
+          for ( String infoRowMetaXml : infoRowMetaJsons ) {
+            RowMetaInterface infoRowMeta = JsonRowMeta.fromJson( infoRowMetaXml );
             infoRowMetas.add( infoRowMeta );
             // System.out.println( "======== INFO ROW META : "+infoRowMeta.toString() );
           }
