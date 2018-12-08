@@ -18,6 +18,7 @@ import org.kettle.beam.core.shared.VariableValue;
 import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
+import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.core.plugins.PluginRegistry;
 import org.pentaho.di.core.plugins.StepPluginType;
@@ -255,9 +256,12 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
           // Input row metadata...
           //
           inputRowMeta = KettleBeamUtil.convertFromRowMetaXml( rowMetaXml );
+          // System.out.println( "======== INPUT ROW META : "+inputRowMeta.toString() );
           infoRowMetas = new ArrayList<>();
           for ( String infoRowMetaXml : infoRowMetaXmls ) {
-            infoRowMetas.add( KettleBeamUtil.convertFromRowMetaXml( infoRowMetaXml ) );
+            RowMetaInterface infoRowMeta = KettleBeamUtil.convertFromRowMetaXml( infoRowMetaXml );
+            infoRowMetas.add( infoRowMeta );
+            // System.out.println( "======== INFO ROW META : "+infoRowMeta.toString() );
           }
 
           // Create an Injector step with the right row layout...
@@ -374,10 +378,15 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
           StepMetaDataCombi stepCombi = findCombi( trans, stepname );
           stepCombis.add( stepCombi );
           outputRowMeta = transMeta.getStepFields( stepname );
+          // System.out.println("======== OUTPUT ROW METADATA : "+outputRowMeta.toString());
 
           if ( targetSteps.isEmpty() ) {
             rowListener = new RowAdapter() {
               @Override public void rowWrittenEvent( RowMetaInterface rowMeta, Object[] row ) throws KettleStepException {
+
+                // if (infoSteps.size()>0 && resultRows.size()==0) {
+                //  System.out.println( ">>>>>>>>> CAPTURE ROW: "+rowMeta.toString());
+                // }
                 resultRows.add( row );
               }
             };
@@ -447,7 +456,10 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
             // Pass and process the rows in the info steps
             //
+            // System.out.println("<<<<<<<<<<<<<<<<< Producing "+infoDataSet.size()+" info rows for step "+infoSteps.get(i)+" : "+infoRowMeta.toString());
             for ( KettleRow infoRowData : infoDataSet ) {
+
+              // System.out.println("<<<<< Row: "+infoRowMeta.getString( infoRowData.getRow() ));
               infoRowProducer.putRow( infoRowMeta, infoRowData.getRow() );
               combi.step.processRow( combi.meta, combi.data );
             }
