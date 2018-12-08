@@ -84,7 +84,9 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
       //   We need to calcualte the aggregation of these subject lists
       //   Then we output group values with result values behind it.
       //
-      PCollection<KettleRow> output = grouped.apply( ParDo.of( new GroupByFn( groupRowMeta.getMetaXML(), stepPluginClasses, xpPluginClasses, subjectRowMeta.getMetaXML(), aggregations ) ) );
+      PCollection<KettleRow> output = grouped.apply( ParDo.of(
+        new GroupByFn( JsonRowMeta.toJson(groupRowMeta), stepPluginClasses, xpPluginClasses,
+          JsonRowMeta.toJson(subjectRowMeta), aggregations ) ) );
 
       return output;
     } catch(Exception e) {
