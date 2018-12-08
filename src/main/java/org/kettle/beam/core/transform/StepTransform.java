@@ -258,8 +258,8 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
           inputRowMeta = JsonRowMeta.fromJson( inputRowMetaJson );
           // System.out.println( "======== INPUT ROW META : "+inputRowMeta.toString() );
           infoRowMetas = new ArrayList<>();
-          for ( String infoRowMetaXml : infoRowMetaJsons ) {
-            RowMetaInterface infoRowMeta = JsonRowMeta.fromJson( infoRowMetaXml );
+          for ( String infoRowMetaJson : infoRowMetaJsons ) {
+            RowMetaInterface infoRowMeta = JsonRowMeta.fromJson( infoRowMetaJson );
             infoRowMetas.add( infoRowMeta );
             // System.out.println( "======== INFO ROW META : "+infoRowMeta.toString() );
           }
