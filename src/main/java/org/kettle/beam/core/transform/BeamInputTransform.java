@@ -23,7 +23,7 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
   private String stepname;
   private String inputLocation;
   private String separator;
-  private String rowMetaXml;
+  private String rowMetaJson;
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
 
@@ -34,12 +34,12 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
   public BeamInputTransform() {
   }
 
-  public BeamInputTransform( @Nullable String name, String stepname, String inputLocation, String separator, String rowMetaXml, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public BeamInputTransform( @Nullable String name, String stepname, String inputLocation, String separator, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     super( name );
     this.stepname = stepname;
     this.inputLocation = inputLocation;
     this.separator = separator;
-    this.rowMetaXml = rowMetaXml;
+    this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
   }
@@ -59,7 +59,7 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
 
         // We need to transform these lines into Kettle fields
         //
-        .apply( stepname, ParDo.of( new StringToKettleFn( rowMetaXml, separator, stepPluginClasses, xpPluginClasses ) ) );
+        .apply( stepname, ParDo.of( new StringToKettleFn( rowMetaJson, separator, stepPluginClasses, xpPluginClasses ) ) );
 
       return output;
 

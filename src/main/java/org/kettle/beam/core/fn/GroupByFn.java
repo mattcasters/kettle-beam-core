@@ -7,14 +7,12 @@ import org.apache.beam.sdk.values.KV;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.shared.AggregationType;
+import org.kettle.beam.core.util.JsonRowMeta;
 import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowDataUtil;
-import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.xml.XMLHandler;
-import org.pentaho.di.core.xml.XMLHandlerCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,8 +21,8 @@ import java.util.List;
 public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRow> {
 
 
-  private String groupRowMetaXml; // The data types of the subjects
-  private String subjectRowMetaXml; // The data types of the subjects
+  private String groupRowMetaJson; // The data types of the subjects
+  private String subjectRowMetaJson; // The data types of the subjects
   private String[] aggregations; // The aggregation types
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
@@ -40,11 +38,11 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
   public GroupByFn() {
   }
 
-  public GroupByFn( String groupRowMetaXml, List<String> stepPluginClasses, List<String> xpPluginClasses, String subjectRowMetaXml, String[] aggregations ) {
-    this.groupRowMetaXml = groupRowMetaXml;
+  public GroupByFn( String groupRowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String subjectRowMetaJson, String[] aggregations ) {
+    this.groupRowMetaJson = groupRowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
-    this.subjectRowMetaXml = subjectRowMetaXml;
+    this.subjectRowMetaJson = subjectRowMetaJson;
     this.aggregations = aggregations;
   }
 
@@ -56,8 +54,8 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
 
         BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
-        groupRowMeta = KettleBeamUtil.convertFromRowMetaXml( groupRowMetaXml );
-        subjectRowMeta = KettleBeamUtil.convertFromRowMetaXml( subjectRowMetaXml );
+        groupRowMeta = JsonRowMeta.fromJson( groupRowMetaJson );
+        subjectRowMeta = JsonRowMeta.fromJson( subjectRowMetaJson );
         aggregationTypes = new AggregationType[aggregations.length];
         for ( int i = 0; i < aggregationTypes.length; i++ ) {
           aggregationTypes[ i ] = AggregationType.getTypeFromName( aggregations[ i ] );

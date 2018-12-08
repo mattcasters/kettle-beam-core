@@ -18,7 +18,6 @@ import org.kettle.beam.core.shared.VariableValue;
 import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleStepException;
-import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.logging.LogLevel;
 import org.pentaho.di.core.plugins.PluginRegistry;
 import org.pentaho.di.core.plugins.StepPluginType;
@@ -52,7 +51,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
   protected List<String> xpPluginClasses;
   protected String stepname;
   protected String stepPluginId;
-  protected String inputRowMetaXml;
+  protected String inputRowMetaJson;
   protected String stepMetaInterfaceXml;
   protected List<String> targetSteps;
   protected List<String> infoSteps;
@@ -71,7 +70,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
   }
 
   public StepTransform( List<VariableValue> variableValues, String metastoreJson, List<String> stepPluginClasses, List<String> xpPluginClasses,
-                        String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaXml,
+                        String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaJson,
                         List<String> targetSteps, List<String> infoSteps, List<String> infoRowMetaXmls, List<PCollectionView<List<KettleRow>>> infoCollectionViews ) {
     this.variableValues = variableValues;
     this.metastoreJson = metastoreJson;
@@ -80,7 +79,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     this.stepname = stepname;
     this.stepPluginId = stepPluginId;
     this.stepMetaInterfaceXml = stepMetaInterfaceXml;
-    this.inputRowMetaXml = inputRowMetaXml;
+    this.inputRowMetaJson = inputRowMetaJson;
     this.targetSteps = targetSteps;
     this.infoSteps = infoSteps;
     this.infoRowMetaXmls = infoRowMetaXmls;
@@ -117,7 +116,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
       // Create a new step function, initializes the step
       //
       StepFn stepFn = new StepFn( variableValues, metastoreJson, stepPluginClasses, xpPluginClasses,
-        stepname, stepPluginId, stepMetaInterfaceXml, inputRowMetaXml,
+        stepname, stepPluginId, stepMetaInterfaceXml, inputRowMetaJson,
         targetSteps, infoSteps, infoRowMetaXmls );
 
       // The actual step functionality

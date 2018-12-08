@@ -5,16 +5,14 @@ import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
+import org.kettle.beam.core.util.JsonRowMeta;
 import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.RowDataUtil;
-import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaString;
-import org.pentaho.di.core.xml.XMLHandler;
-import org.pentaho.di.core.xml.XMLHandlerCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +20,7 @@ import java.util.List;
 
 public class StringToKettleFn extends DoFn<String, KettleRow> {
 
-  private String rowMetaXml;
+  private String rowMetaJson;
   private String separator;
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
@@ -36,8 +34,8 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
 
   private transient RowMetaInterface rowMeta;
 
-  public StringToKettleFn( String rowMetaXml, String separator, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
-    this.rowMetaXml = rowMetaXml;
+  public StringToKettleFn( String rowMetaJson, String separator, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+    this.rowMetaJson = rowMetaJson;
     this.separator = separator;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
@@ -60,7 +58,7 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
         //
         BeamKettle.init( stepPluginClasses, xpPluginClasses );
 
-        rowMeta = KettleBeamUtil.convertFromRowMetaXml( rowMetaXml );
+        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
         readCounter = Metrics.counter( "read", "INPUT" );
         writtenCounter = Metrics.counter( "written", "INPUT" );

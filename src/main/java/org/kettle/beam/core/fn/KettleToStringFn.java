@@ -6,11 +6,8 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.commons.lang.StringUtils;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
-import org.kettle.beam.core.util.KettleBeamUtil;
-import org.pentaho.di.core.row.RowMeta;
+import org.kettle.beam.core.util.JsonRowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.xml.XMLHandler;
-import org.pentaho.di.core.xml.XMLHandlerCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +18,7 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
   private String outputLocation;
   private String separator;
   private String enclosure;
-  private String rowMetaXml;
+  private String rowMetaJson;
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
 
@@ -33,11 +30,11 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
   private static final Logger LOG = LoggerFactory.getLogger( KettleToStringFn.class );
   private final Counter numParseErrors = Metrics.counter( "main", "ParseErrors" );
 
-  public KettleToStringFn( String outputLocation, String separator, String enclosure, String rowMetaXml, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public KettleToStringFn( String outputLocation, String separator, String enclosure, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.outputLocation = outputLocation;
     this.separator = separator;
     this.enclosure = enclosure;
-    this.rowMetaXml = rowMetaXml;
+    this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
   }
@@ -55,7 +52,7 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
         //
         BeamKettle.init( stepPluginClasses, xpPluginClasses );
 
-        rowMeta = KettleBeamUtil.convertFromRowMetaXml( rowMetaXml );
+        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
         readCounter = Metrics.counter( "read", "OUTPUT" );
         writtenCounter = Metrics.counter( "written", "OUTPUT" );
@@ -73,17 +70,19 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
         }
 
         String valueString = rowMeta.getString( inputRow.getRow(), i );
-        boolean enclose = false;
 
-        if ( valueString!=null && StringUtils.isNotEmpty( enclosure ) ) {
-          enclose = valueString.contains( enclosure );
-        }
-        if ( enclose ) {
-          line.append( enclosure );
-        }
-        line.append( valueString );
-        if ( enclose ) {
-          line.append( enclosure );
+        if ( valueString != null ) {
+          boolean enclose = false;
+          if ( StringUtils.isNotEmpty( enclosure ) ) {
+            enclose = valueString.contains( enclosure );
+          }
+          if ( enclose ) {
+            line.append( enclosure );
+          }
+          line.append( valueString );
+          if ( enclose ) {
+            line.append( enclosure );
+          }
         }
       }
 

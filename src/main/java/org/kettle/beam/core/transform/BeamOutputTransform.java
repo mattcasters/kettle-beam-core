@@ -11,10 +11,9 @@ import org.apache.commons.lang.StringUtils;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.fn.KettleToStringFn;
+import org.kettle.beam.core.util.JsonRowMeta;
 import org.kettle.beam.core.util.KettleBeamUtil;
-import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.xml.XMLHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,7 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
   private String fileSuffix;
   private String separator;
   private String enclosure;
-  private String rowMetaXml;
+  private String rowMetaJson;
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
 
@@ -42,14 +41,14 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
   public BeamOutputTransform() {
   }
 
-  public BeamOutputTransform( String stepname, String outputLocation, String filePrefix, String fileSuffix, String separator, String enclosure, String rowMetaXml, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public BeamOutputTransform( String stepname, String outputLocation, String filePrefix, String fileSuffix, String separator, String enclosure, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.stepname = stepname;
     this.outputLocation = outputLocation;
     this.filePrefix = filePrefix;
     this.fileSuffix = fileSuffix;
     this.separator = separator;
     this.enclosure = enclosure;
-    this.rowMetaXml = rowMetaXml;
+    this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
   }
@@ -63,15 +62,12 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
 
       // Inflate the metadata on the node where this is running...
       //
-      RowMetaInterface rowMeta = KettleBeamUtil.convertFromRowMetaXml( rowMetaXml );
+      RowMetaInterface rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
       // This is the end of a computing chain, we write out the results
+      // We write a bunch of Strings, one per line basically
       //
-
-
-      // We read a bunch of Strings, one per line basically
-      //
-      PCollection<String> stringCollection = input.apply( stepname, ParDo.of( new KettleToStringFn( outputLocation, separator, enclosure, rowMetaXml, stepPluginClasses, xpPluginClasses ) ) );
+      PCollection<String> stringCollection = input.apply( stepname, ParDo.of( new KettleToStringFn( outputLocation, separator, enclosure, rowMetaJson, stepPluginClasses, xpPluginClasses ) ) );
 
       // We need to transform these lines into a file and then we're PDone
       //
@@ -200,18 +196,18 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
   }
 
   /**
-   * Gets rowMetaXml
+   * Gets rowMetaJson
    *
-   * @return value of rowMetaXml
+   * @return value of rowMetaJson
    */
-  public String getRowMetaXml() {
-    return rowMetaXml;
+  public String getRowMetaJson() {
+    return rowMetaJson;
   }
 
   /**
-   * @param rowMetaXml The rowMetaXml to set
+   * @param rowMetaJson The rowMetaJson to set
    */
-  public void setRowMetaXml( String rowMetaXml ) {
-    this.rowMetaXml = rowMetaXml;
+  public void setRowMetaJson( String rowMetaJson ) {
+    this.rowMetaJson = rowMetaJson;
   }
 }
