@@ -11,7 +11,9 @@ import org.apache.commons.lang.StringUtils;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.fn.KettleToStringFn;
+import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.row.RowMeta;
+import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +63,7 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
 
       // Inflate the metadata on the node where this is running...
       //
-      RowMeta rowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
+      RowMetaInterface rowMeta = KettleBeamUtil.convertFromRowMetaXml( rowMetaXml );
 
       // This is the end of a computing chain, we write out the results
       //

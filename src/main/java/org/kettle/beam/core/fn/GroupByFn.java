@@ -7,6 +7,7 @@ import org.apache.beam.sdk.values.KV;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.shared.AggregationType;
+import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMeta;
@@ -55,12 +56,8 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
 
         BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
-        synchronized ( XMLHandlerCache.getInstance() ) {
-          groupRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( groupRowMetaXml ), RowMeta.XML_META_TAG ) );
-          XMLHandlerCache.getInstance().clear();
-          subjectRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( subjectRowMetaXml ), RowMeta.XML_META_TAG ) );
-          XMLHandlerCache.getInstance().clear();
-        }
+        groupRowMeta = KettleBeamUtil.convertFromRowMetaXml( groupRowMetaXml );
+        subjectRowMeta = KettleBeamUtil.convertFromRowMetaXml( subjectRowMetaXml );
         aggregationTypes = new AggregationType[aggregations.length];
         for ( int i = 0; i < aggregationTypes.length; i++ ) {
           aggregationTypes[ i ] = AggregationType.getTypeFromName( aggregations[ i ] );

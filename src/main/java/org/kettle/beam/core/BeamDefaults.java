@@ -5,4 +5,5 @@ public class BeamDefaults {
   public static final String STRING_BEAM_OUTPUT_PLUGIN_ID = "BeamOutput";
 
   public static final String STRING_KETTLE_BEAM = "Kettle Beam";
+
 }

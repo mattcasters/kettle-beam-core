@@ -15,6 +15,7 @@ import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.fn.GroupByFn;
 import org.kettle.beam.core.fn.GroupSubjectFn;
+import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.row.RowMeta;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.xml.XMLHandler;
@@ -61,7 +62,7 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
       if ( inputRowMeta == null ) {
         BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
-        inputRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
+        inputRowMeta = KettleBeamUtil.convertFromRowMetaXml( rowMetaXml );
 
         groupRowMeta = new RowMeta();
         for (int i=0;i<groupFields.length;i++) {
@@ -71,7 +72,6 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
         for (int i=0;i<subjects.length;i++) {
           subjectRowMeta.addValueMeta( inputRowMeta.searchValueMeta( subjects[i] ) );
         }
-
       }
 
       // Split the KettleRow into GroupFields-KettleRow and SubjectFields-KettleRow

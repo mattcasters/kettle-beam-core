@@ -6,6 +6,7 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
+import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMeta;
@@ -65,10 +66,7 @@ public class GroupSubjectFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> {
         //
         BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
-        synchronized ( XMLHandlerCache.getInstance() ) {
-          inputRowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( inputRowMetaXml ), RowMeta.XML_META_TAG ) );
-          XMLHandlerCache.getInstance().clear();
-        }
+        inputRowMeta = KettleBeamUtil.convertFromRowMetaXml( inputRowMetaXml );
 
         // Construct the group row metadata
         //

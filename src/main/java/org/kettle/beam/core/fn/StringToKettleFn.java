@@ -5,6 +5,7 @@ import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
+import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.RowDataUtil;
@@ -59,10 +60,8 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
         //
         BeamKettle.init( stepPluginClasses, xpPluginClasses );
 
-        synchronized ( XMLHandlerCache.getInstance() ) {
-          rowMeta = new RowMeta( XMLHandler.getSubNode( XMLHandler.loadXMLString( rowMetaXml ), RowMeta.XML_META_TAG ) );
-          XMLHandlerCache.getInstance().clear();
-        }
+        rowMeta = KettleBeamUtil.convertFromRowMetaXml( rowMetaXml );
+
         readCounter = Metrics.counter( "read", "INPUT" );
         writtenCounter = Metrics.counter( "written", "INPUT" );
       }
