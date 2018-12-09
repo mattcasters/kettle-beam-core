@@ -7,7 +7,6 @@ import org.apache.beam.sdk.values.KV;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.util.JsonRowMeta;
-import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
@@ -25,6 +24,7 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
   private List<String> xpPluginClasses;
   private String[] keyFields;
   private String[] valueFields;
+  private String counterName;
 
   private static final Logger LOG = LoggerFactory.getLogger( KettleKeyValueFn.class );
   private final Counter numErrors = Metrics.counter( "main", "KeyValueErrors" );
@@ -33,15 +33,20 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
   private transient int[] keyIndexes;
   private transient int[] valueIndexes;
 
+  private transient Counter initCounter;
+  private transient Counter readCounter;
+
   public KettleKeyValueFn() {
   }
 
-  public KettleKeyValueFn( String inputRowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String[] keyFields, String[] valueFields) {
+  public KettleKeyValueFn( String inputRowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses,
+                           String[] keyFields, String[] valueFields, String counterName) {
     this.inputRowMetaJson = inputRowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
     this.keyFields = keyFields;
     this.valueFields = valueFields;
+    this.counterName = counterName;
   }
 
   @ProcessElement
@@ -80,13 +85,19 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
           }
         }
 
+        initCounter = Metrics.counter( "init", counterName );
+        readCounter = Metrics.counter( "read", counterName );
+
         // Now that we know everything, we can split the row...
         //
+        initCounter.inc();
       }
 
       // Get an input row
       //
       KettleRow inputKettleRow = processContext.element();
+      readCounter.inc();
+
       Object[] inputRow = inputKettleRow.getRow();
 
       // Copy over the data...

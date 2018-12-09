@@ -25,6 +25,7 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
   // The non-transient methods are serializing
   // Keep them simple to stay out of trouble.
   //
+  private String stepname;
   private String rowMetaJson;   // The input row
   private String[] groupFields;  // The fields to group over
   private String[] subjects; // The subjects to aggregate on
@@ -43,7 +44,8 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
   public GroupByTransform() {
   }
 
-  public GroupByTransform( String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String[] groupFields, String[] subjects, String[] aggregations, String[] resultFields) {
+  public GroupByTransform( String stepname, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String[] groupFields, String[] subjects, String[] aggregations, String[] resultFields) {
+    this.stepname = stepname;
     this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
@@ -72,7 +74,8 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
 
       // Split the KettleRow into GroupFields-KettleRow and SubjectFields-KettleRow
       //
-      PCollection<KV<KettleRow, KettleRow>> groupSubjects = input.apply( ParDo.of( new KettleKeyValueFn( rowMetaJson, stepPluginClasses, xpPluginClasses, groupFields, subjects ) ) );
+      PCollection<KV<KettleRow, KettleRow>> groupSubjects = input.apply( ParDo.of(
+        new KettleKeyValueFn( rowMetaJson, stepPluginClasses, xpPluginClasses, groupFields, subjects, stepname ) ) );
 
       // Now we need to aggregate the groups with a Combine
       GroupByKey<KettleRow, KettleRow> byKey = GroupByKey.<KettleRow, KettleRow>create();
@@ -85,7 +88,7 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
       //   Then we output group values with result values behind it.
       //
       PCollection<KettleRow> output = grouped.apply( ParDo.of(
-        new GroupByFn( JsonRowMeta.toJson(groupRowMeta), stepPluginClasses, xpPluginClasses,
+        new GroupByFn(JsonRowMeta.toJson(groupRowMeta), stepPluginClasses, xpPluginClasses,
           JsonRowMeta.toJson(subjectRowMeta), aggregations ) ) );
 
       return output;
