@@ -4,12 +4,15 @@ import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.values.KV;
+import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.util.JsonRowMeta;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, KettleRow> {
 
@@ -18,6 +21,8 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
   private String leftVRowMetaJson;
   private String rightVRowMetaJson;
   private String counterName;
+  private List<String> stepPluginClasses;
+  private List<String>xpPluginClasses;
 
   private static final Logger LOG = LoggerFactory.getLogger( AssemblerFn.class );
   private final Counter numErrors = Metrics.counter( "main", "AssembleFnErrors" );
@@ -33,12 +38,15 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
   public AssemblerFn() {
   }
 
-  public AssemblerFn( String outputRowMetaJson, String leftKRowMetaJson, String leftVRowMetaJson, String rightVRowMetaJson, String counterName) {
+  public AssemblerFn( String outputRowMetaJson, String leftKRowMetaJson, String leftVRowMetaJson, String rightVRowMetaJson, String counterName,
+                      List<String> stepPluginClasses, List<String>xpPluginClasses) {
     this.outputRowMetaJson = outputRowMetaJson;
     this.leftKRowMetaJson = leftKRowMetaJson;
     this.leftVRowMetaJson = leftVRowMetaJson;
     this.rightVRowMetaJson = rightVRowMetaJson;
     this.counterName = counterName;
+    this.stepPluginClasses = stepPluginClasses;
+    this.xpPluginClasses = xpPluginClasses;
   }
 
   @ProcessElement
@@ -46,6 +54,9 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
 
     try {
       if ( outputRowMeta == null ) {
+
+        BeamKettle.init(stepPluginClasses, xpPluginClasses);
+
         outputRowMeta = JsonRowMeta.fromJson( outputRowMetaJson );
         leftKRowMeta = JsonRowMeta.fromJson( leftKRowMetaJson );
         leftVRowMeta = JsonRowMeta.fromJson( leftVRowMetaJson );
