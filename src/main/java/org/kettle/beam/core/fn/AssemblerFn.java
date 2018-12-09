@@ -17,6 +17,7 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
   private String leftKRowMetaJson;
   private String leftVRowMetaJson;
   private String rightVRowMetaJson;
+  private String counterName;
 
   private static final Logger LOG = LoggerFactory.getLogger( AssemblerFn.class );
   private final Counter numErrors = Metrics.counter( "main", "AssembleFnErrors" );
@@ -26,14 +27,18 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
   private transient RowMetaInterface leftVRowMeta;
   private transient RowMetaInterface rightVRowMeta;
 
+  private transient Counter initCounter;
+  private transient Counter writtenCounter;
+
   public AssemblerFn() {
   }
 
-  public AssemblerFn( String outputRowMetaJson, String leftKRowMetaJson, String leftVRowMetaJson, String rightVRowMetaJson) {
+  public AssemblerFn( String outputRowMetaJson, String leftKRowMetaJson, String leftVRowMetaJson, String rightVRowMetaJson, String counterName) {
     this.outputRowMetaJson = outputRowMetaJson;
     this.leftKRowMetaJson = leftKRowMetaJson;
     this.leftVRowMetaJson = leftVRowMetaJson;
     this.rightVRowMetaJson = rightVRowMetaJson;
+    this.counterName = counterName;
   }
 
   @ProcessElement
@@ -45,6 +50,11 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
         leftKRowMeta = JsonRowMeta.fromJson( leftKRowMetaJson );
         leftVRowMeta = JsonRowMeta.fromJson( leftVRowMetaJson );
         rightVRowMeta = JsonRowMeta.fromJson( rightVRowMetaJson );
+
+        initCounter = Metrics.counter( "init", counterName );
+        writtenCounter = Metrics.counter( "written", counterName );
+
+        initCounter.inc();
       }
 
       KV<KettleRow, KV<KettleRow, KettleRow>> element = processContext.element();
@@ -102,6 +112,8 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
       // System.out.println("Assembled row : "+outputRowMeta.getString(outputRow));
 
       processContext.output( new KettleRow( outputRow ) );
+      writtenCounter.inc();
+
     } catch(Exception e) {
       numErrors.inc();
       LOG.error( "Error assembling rows", e);

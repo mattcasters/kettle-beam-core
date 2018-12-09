@@ -8,7 +8,6 @@ import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.shared.AggregationType;
 import org.kettle.beam.core.util.JsonRowMeta;
-import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
