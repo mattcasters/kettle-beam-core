@@ -59,7 +59,7 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
 
         // We need to transform these lines into Kettle fields
         //
-        .apply( stepname, ParDo.of( new StringToKettleFn( rowMetaJson, separator, stepPluginClasses, xpPluginClasses ) ) );
+        .apply( stepname, ParDo.of( new StringToKettleFn( stepname, rowMetaJson, separator, stepPluginClasses, xpPluginClasses ) ) );
 
       return output;
 

@@ -23,6 +23,7 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
   private List<String> xpPluginClasses;
 
   private transient RowMetaInterface rowMeta;
+  private transient Counter initCounter;
   private transient Counter readCounter;
   private transient Counter writtenCounter;
 
@@ -41,22 +42,25 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
 
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
-    KettleRow inputRow = processContext.element();
 
     try {
-
-
       if ( rowMeta == null ) {
-
         // Just to make sure
         //
         BeamKettle.init( stepPluginClasses, xpPluginClasses );
 
         rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
+        initCounter = Metrics.counter( "init", "OUTPUT" );
         readCounter = Metrics.counter( "read", "OUTPUT" );
         writtenCounter = Metrics.counter( "written", "OUTPUT" );
+
+        initCounter.inc();
       }
+
+
+      KettleRow inputRow = processContext.element();
+      readCounter.inc();
 
       // Just a quick and dirty output for now...
       // TODO: refine with mulitple output formats, Avro, Parquet, ...
@@ -89,6 +93,7 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
       // Pass the row to the process context
       //
       processContext.output( line.toString() );
+      writtenCounter.inc();
 
     } catch ( Exception e ) {
       numParseErrors.inc();

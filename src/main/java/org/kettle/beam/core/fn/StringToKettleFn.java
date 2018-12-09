@@ -20,11 +20,13 @@ import java.util.List;
 
 public class StringToKettleFn extends DoFn<String, KettleRow> {
 
+  private String stepname;
   private String rowMetaJson;
   private String separator;
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
 
+  private transient Counter initCounter;
   private transient Counter readCounter;
   private transient Counter writtenCounter;
 
@@ -34,7 +36,8 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
 
   private transient RowMetaInterface rowMeta;
 
-  public StringToKettleFn( String rowMetaJson, String separator, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public StringToKettleFn( String stepname, String rowMetaJson, String separator, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+    this.stepname = stepname;
     this.rowMetaJson = rowMetaJson;
     this.separator = separator;
     this.stepPluginClasses = stepPluginClasses;
@@ -44,12 +47,6 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
 
-    String inputString = processContext.element();
-
-    String[] components = inputString.split( separator, -1 );
-
-    // TODO: implement enclosure in FileDefinition
-    //
     try {
 
       if ( rowMeta == null ) {
@@ -60,9 +57,20 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
 
         rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
-        readCounter = Metrics.counter( "read", "INPUT" );
-        writtenCounter = Metrics.counter( "written", "INPUT" );
+        initCounter = Metrics.counter( "init", stepname );
+        readCounter = Metrics.counter( "read", stepname );
+        writtenCounter = Metrics.counter( "written", stepname );
+
+        initCounter.inc();
       }
+
+      String inputString = processContext.element();
+      readCounter.inc();
+
+      String[] components = inputString.split( separator, -1 );
+
+      // TODO: implement enclosure in FileDefinition
+      //
 
       Object[] row = RowDataUtil.allocateRowData( rowMeta.size() );
       int index = 0;
@@ -82,6 +90,7 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
       // Pass the row to the process context
       //
       processContext.output( new KettleRow( row ) );
+      writtenCounter.inc();
 
     } catch ( Exception e ) {
       numParseErrors.inc();

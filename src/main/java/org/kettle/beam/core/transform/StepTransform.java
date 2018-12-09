@@ -484,6 +484,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
         // Get one row from the context main input and make a copy so we can change it.
         //
         KettleRow inputRow = KettleBeamUtil.copyKettleRow( context.element(), inputRowMeta );
+        readCounter.inc();
 
         // Empty all the row buffers for another iteration
         //
@@ -496,8 +497,6 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
         // Pass the row to the input rowset
         //
         rowProducer.putRow( inputRowMeta, inputRow.getRow() );
-        readCounter.inc();
-
 
         // Execute all steps in the transformation
         //

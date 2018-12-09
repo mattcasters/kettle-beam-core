@@ -35,6 +35,10 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
 
   private transient AggregationType[] aggregationTypes = null;
 
+  private transient Counter initCounter;
+  private transient Counter readCounter;
+  private transient Counter writtenCounter;
+
   public GroupByFn() {
   }
 
@@ -60,9 +64,17 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
         for ( int i = 0; i < aggregationTypes.length; i++ ) {
           aggregationTypes[ i ] = AggregationType.getTypeFromName( aggregations[ i ] );
         }
+
+        initCounter = Metrics.counter( "init", "OUTPUT" );
+        readCounter = Metrics.counter( "read", "OUTPUT" );
+        writtenCounter = Metrics.counter( "written", "OUTPUT" );
+
+        initCounter.inc();
       }
 
       KV<KettleRow, Iterable<KettleRow>> inputElement = processContext.element();
+      readCounter.inc();
+
       KettleRow groupKettleRow = inputElement.getKey();
       Object[] groupRow = groupKettleRow.getRow();
 
@@ -135,6 +147,7 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
       // Send it on its way
       //
       processContext.output( new KettleRow( resultRow ) );
+      writtenCounter.inc();
 
     } catch(Exception e) {
       numErrors.inc();
