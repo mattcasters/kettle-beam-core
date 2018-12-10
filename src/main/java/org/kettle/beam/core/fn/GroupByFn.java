@@ -20,6 +20,7 @@ import java.util.List;
 public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRow> {
 
 
+  private String counterName;
   private String groupRowMetaJson; // The data types of the subjects
   private String subjectRowMetaJson; // The data types of the subjects
   private String[] aggregations; // The aggregation types
@@ -41,7 +42,8 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
   public GroupByFn() {
   }
 
-  public GroupByFn( String groupRowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String subjectRowMetaJson, String[] aggregations ) {
+  public GroupByFn( String counterName, String groupRowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String subjectRowMetaJson, String[] aggregations ) {
+    this.counterName = counterName;
     this.groupRowMetaJson = groupRowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
@@ -64,9 +66,9 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
           aggregationTypes[ i ] = AggregationType.getTypeFromName( aggregations[ i ] );
         }
 
-        initCounter = Metrics.counter( "init", "OUTPUT" );
-        readCounter = Metrics.counter( "read", "OUTPUT" );
-        writtenCounter = Metrics.counter( "written", "OUTPUT" );
+        initCounter = Metrics.counter( "init", counterName );
+        readCounter = Metrics.counter( "read", counterName );
+        writtenCounter = Metrics.counter( "written", counterName );
 
         initCounter.inc();
       }
