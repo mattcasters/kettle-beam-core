@@ -74,7 +74,6 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
       }
 
       KV<KettleRow, Iterable<KettleRow>> inputElement = processContext.element();
-      readCounter.inc();
 
       KettleRow groupKettleRow = inputElement.getKey();
       Object[] groupRow = groupKettleRow.getRow();
@@ -89,6 +88,7 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
       Iterable<KettleRow> subjectKettleRows = inputElement.getValue();
       for ( KettleRow subjectKettleRow : subjectKettleRows ) {
         Object[] subjectRow = subjectKettleRow.getRow();
+        readCounter.inc();
 
         // Aggregate this...
         //
