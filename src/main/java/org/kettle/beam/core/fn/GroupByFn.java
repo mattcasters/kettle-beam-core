@@ -28,7 +28,6 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
   private List<String> xpPluginClasses;
 
   private static final Logger LOG = LoggerFactory.getLogger( GroupByFn.class );
-  private final Counter numErrors = Metrics.counter( "main", "GroupByErrors" );
 
   private transient RowMetaInterface groupRowMeta;
   private transient RowMetaInterface subjectRowMeta;
@@ -38,6 +37,7 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
   private transient Counter initCounter;
   private transient Counter readCounter;
   private transient Counter writtenCounter;
+  private transient Counter errorCounter;
 
   public GroupByFn() {
   }
@@ -69,6 +69,7 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
         initCounter = Metrics.counter( "init", counterName );
         readCounter = Metrics.counter( "read", counterName );
         writtenCounter = Metrics.counter( "written", counterName );
+        errorCounter = Metrics.counter( "error", counterName );
 
         initCounter.inc();
       }
@@ -151,7 +152,7 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
       writtenCounter.inc();
 
     } catch(Exception e) {
-      numErrors.inc();
+      errorCounter.inc();
       LOG.error("Error grouping by ", e);
       throw new RuntimeException( "Unable to split row into group and subject ", e );
     }

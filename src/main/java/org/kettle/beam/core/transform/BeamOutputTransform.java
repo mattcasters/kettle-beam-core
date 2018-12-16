@@ -67,7 +67,7 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
       // This is the end of a computing chain, we write out the results
       // We write a bunch of Strings, one per line basically
       //
-      PCollection<String> stringCollection = input.apply( stepname, ParDo.of( new KettleToStringFn( outputLocation, separator, enclosure, rowMetaJson, stepPluginClasses, xpPluginClasses ) ) );
+      PCollection<String> stringCollection = input.apply( stepname, ParDo.of( new KettleToStringFn( stepname, outputLocation, separator, enclosure, rowMetaJson, stepPluginClasses, xpPluginClasses ) ) );
 
       // We need to transform these lines into a file and then we're PDone
       //

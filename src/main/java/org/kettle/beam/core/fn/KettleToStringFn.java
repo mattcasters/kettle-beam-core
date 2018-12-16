@@ -15,6 +15,7 @@ import java.util.List;
 
 public class KettleToStringFn extends DoFn<KettleRow, String> {
 
+  private String counterName;
   private String outputLocation;
   private String separator;
   private String enclosure;
@@ -26,12 +27,13 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
   private transient Counter initCounter;
   private transient Counter readCounter;
   private transient Counter writtenCounter;
+  private transient Counter errorCounter;
 
   // Log and count parse errors.
   private static final Logger LOG = LoggerFactory.getLogger( KettleToStringFn.class );
-  private final Counter numParseErrors = Metrics.counter( "main", "ParseErrors" );
 
-  public KettleToStringFn( String outputLocation, String separator, String enclosure, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public KettleToStringFn( String counterName, String outputLocation, String separator, String enclosure, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+    this.counterName = counterName;
     this.outputLocation = outputLocation;
     this.separator = separator;
     this.enclosure = enclosure;
@@ -51,9 +53,10 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
 
         rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
-        initCounter = Metrics.counter( "init", "OUTPUT" );
-        readCounter = Metrics.counter( "read", "OUTPUT" );
-        writtenCounter = Metrics.counter( "written", "OUTPUT" );
+        initCounter = Metrics.counter( "init", counterName );
+        readCounter = Metrics.counter( "read", counterName );
+        writtenCounter = Metrics.counter( "written", counterName );
+        errorCounter = Metrics.counter( "error", counterName );
 
         initCounter.inc();
       }
@@ -96,7 +99,7 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
       writtenCounter.inc();
 
     } catch ( Exception e ) {
-      numParseErrors.inc();
+      errorCounter.inc();
       LOG.info( "Parse error on " + processContext.element() + ", " + e.getMessage() );
       throw new RuntimeException( "Error converting Kettle data to string lines", e );
     }

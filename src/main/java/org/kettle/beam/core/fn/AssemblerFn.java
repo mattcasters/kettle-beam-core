@@ -25,7 +25,6 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
   private List<String>xpPluginClasses;
 
   private static final Logger LOG = LoggerFactory.getLogger( AssemblerFn.class );
-  private final Counter numErrors = Metrics.counter( "main", "AssembleFnErrors" );
 
   private transient RowMetaInterface outputRowMeta;
   private transient RowMetaInterface leftKRowMeta;
@@ -34,6 +33,7 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
 
   private transient Counter initCounter;
   private transient Counter writtenCounter;
+  private transient Counter errorCounter;
 
   public AssemblerFn() {
   }
@@ -64,6 +64,7 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
 
         initCounter = Metrics.counter( "init", counterName );
         writtenCounter = Metrics.counter( "written", counterName );
+        errorCounter = Metrics.counter( "error", counterName );
 
         initCounter.inc();
       }
@@ -126,7 +127,7 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
       writtenCounter.inc();
 
     } catch(Exception e) {
-      numErrors.inc();
+      errorCounter.inc();
       LOG.error( "Error assembling rows", e);
       throw new RuntimeException( "Error assembling output KV<row, KV<row, row>>", e );
     }

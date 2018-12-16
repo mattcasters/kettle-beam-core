@@ -27,7 +27,6 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
   private String counterName;
 
   private static final Logger LOG = LoggerFactory.getLogger( KettleKeyValueFn.class );
-  private final Counter numErrors = Metrics.counter( "main", "KeyValueErrors" );
 
   private transient RowMetaInterface inputRowMeta;
   private transient int[] keyIndexes;
@@ -35,6 +34,7 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
 
   private transient Counter initCounter;
   private transient Counter readCounter;
+  private transient Counter errorCounter;
 
   public KettleKeyValueFn() {
   }
@@ -87,6 +87,7 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
 
         initCounter = Metrics.counter( "init", counterName );
         readCounter = Metrics.counter( "read", counterName );
+        errorCounter = Metrics.counter( "error", counterName );
 
         // Now that we know everything, we can split the row...
         //
@@ -118,7 +119,7 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
       processContext.output( keyValue );
 
     } catch(Exception e) {
-      numErrors.inc();
+      errorCounter.inc();
       LOG.error("Error splitting row into key and value", e);
       throw new RuntimeException( "Unable to split row into key and value", e );
     }
