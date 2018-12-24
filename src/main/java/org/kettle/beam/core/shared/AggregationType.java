@@ -3,7 +3,7 @@ package org.kettle.beam.core.shared;
 import org.pentaho.di.core.exception.KettleException;
 
 public enum AggregationType {
-  SUM, COUNT_ALL, MIN, MAX,
+  SUM, AVERAGE, COUNT_ALL, MIN, MAX, FIRST_INCL_NULL, LAST_INCL_NULL, FIRST, LAST,
   ;
 
   public static final AggregationType getTypeFromName(String name) throws KettleException {
