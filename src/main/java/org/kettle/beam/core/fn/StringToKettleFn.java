@@ -6,7 +6,6 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.util.JsonRowMeta;
-import org.kettle.beam.core.util.KettleBeamUtil;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.RowDataUtil;
@@ -27,7 +26,7 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
   private List<String> xpPluginClasses;
 
   private transient Counter initCounter;
-  private transient Counter readCounter;
+  private transient Counter inputCounter;
   private transient Counter writtenCounter;
   private transient Counter errorCounter;
 
@@ -58,7 +57,7 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
         rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
         initCounter = Metrics.counter( "init", stepname );
-        readCounter = Metrics.counter( "read", stepname );
+        inputCounter = Metrics.counter( "input", stepname );
         writtenCounter = Metrics.counter( "written", stepname );
         errorCounter = Metrics.counter( "error", stepname );
 
@@ -66,7 +65,7 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
       }
 
       String inputString = processContext.element();
-      readCounter.inc();
+      inputCounter.inc();
 
       String[] components = inputString.split( separator, -1 );
 

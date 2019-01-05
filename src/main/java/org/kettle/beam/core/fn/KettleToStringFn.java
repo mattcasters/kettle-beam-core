@@ -26,7 +26,7 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
   private transient RowMetaInterface rowMeta;
   private transient Counter initCounter;
   private transient Counter readCounter;
-  private transient Counter writtenCounter;
+  private transient Counter outputCounter;
   private transient Counter errorCounter;
 
   // Log and count parse errors.
@@ -55,7 +55,7 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
 
         initCounter = Metrics.counter( "init", counterName );
         readCounter = Metrics.counter( "read", counterName );
-        writtenCounter = Metrics.counter( "written", counterName );
+        outputCounter = Metrics.counter( "output", counterName );
         errorCounter = Metrics.counter( "error", counterName );
 
         initCounter.inc();
@@ -96,7 +96,7 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
       // Pass the row to the process context
       //
       processContext.output( line.toString() );
-      writtenCounter.inc();
+      outputCounter.inc();
 
     } catch ( Exception e ) {
       errorCounter.inc();
