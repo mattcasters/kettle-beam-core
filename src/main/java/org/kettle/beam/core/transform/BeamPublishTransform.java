@@ -15,6 +15,8 @@ import org.kettle.beam.core.BeamDefaults;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.fn.KettleToStringFn;
+import org.kettle.beam.core.fn.PublishMessagesFn;
+import org.kettle.beam.core.fn.PublishStringsFn;
 import org.kettle.beam.core.util.JsonRowMeta;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
@@ -91,21 +93,9 @@ public class BeamPublishTransform extends PTransform<PCollection<KettleRow>, PDo
       // String messages...
       //
       if ( BeamDefaults.PUBSUB_MESSAGE_TYPE_STRING.equalsIgnoreCase( messageType ) ) {
-        PCollection<String> stringPCollection = input.apply( stepname, ParDo.of( new DoFn<KettleRow, String>() {
-          @ProcessElement
-          public void processElement( ProcessContext processContext ) {
-            KettleRow kettleRow = processContext.element();
-            readCounter.inc();
-            try {
-              String string = rowMeta.getString( kettleRow.getRow(), fieldIndex );
-              processContext.output( string );
-              outputCounter.inc();
-            } catch ( Exception e ) {
-              throw new RuntimeException( "Unable to get String from input row", e );
-            }
-          }
-        } ) );
 
+        PublishStringsFn stringsFn = new PublishStringsFn( stepname, fieldIndex, rowMetaJson, stepPluginClasses, xpPluginClasses );
+        PCollection<String> stringPCollection = input.apply( stepname, ParDo.of(stringsFn) );
         PDone done = PubsubIO.writeStrings().to( topic ).expand( stringPCollection );
         return done;
       }
@@ -113,22 +103,8 @@ public class BeamPublishTransform extends PTransform<PCollection<KettleRow>, PDo
       // PubsubMessages
       //
       if ( BeamDefaults.PUBSUB_MESSAGE_TYPE_MESSAGE.equalsIgnoreCase( messageType ) ) {
-        PCollection<PubsubMessage> messagesPCollection = input.apply( ParDo.of( new DoFn<KettleRow, PubsubMessage>() {
-          @ProcessElement
-          public void processElement( ProcessContext processContext ) {
-            KettleRow kettleRow = processContext.element();
-            readCounter.inc();
-            try {
-              byte[] bytes = rowMeta.getBinary( kettleRow.getRow(), fieldIndex );
-              PubsubMessage message = new PubsubMessage( bytes, new HashMap<>() );
-              processContext.output( message );
-              outputCounter.inc();
-            } catch ( Exception e ) {
-              throw new RuntimeException( "Unable to pass message", e );
-            }
-          }
-        } ) );
-
+        PublishMessagesFn messagesFn = new PublishMessagesFn( stepname, fieldIndex, rowMetaJson, stepPluginClasses, xpPluginClasses );
+        PCollection<PubsubMessage> messagesPCollection = input.apply( ParDo.of( messagesFn ) );
         PDone done = PubsubIO.writeMessages().to( topic ).expand( messagesPCollection );
         return done;
       }
@@ -141,6 +117,8 @@ public class BeamPublishTransform extends PTransform<PCollection<KettleRow>, PDo
       throw new RuntimeException( "Error in beam publish transform", e );
     }
   }
+
+
 
 
   /**

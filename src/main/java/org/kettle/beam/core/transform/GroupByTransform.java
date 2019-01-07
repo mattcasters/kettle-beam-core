@@ -76,7 +76,7 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
       //
       PCollection<KV<KettleRow, KettleRow>> groupSubjects = input.apply( ParDo.of(
         new KettleKeyValueFn( rowMetaJson, stepPluginClasses, xpPluginClasses, groupFields, subjects, stepname )
-      ). );
+      ) );
 
       // Now we need to aggregate the groups with a Combine
       GroupByKey<KettleRow, KettleRow> byKey = GroupByKey.<KettleRow, KettleRow>create();
@@ -85,7 +85,7 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
       // Aggregate the rows in the grouped PCollection
       //   Input: KV<KettleRow>, Iterable<KettleRow>>
       //   This means that The group rows is in KettleRow.  For every one of these, you get a list of subject rows.
-      //   We need to calcualte the aggregation of these subject lists
+      //   We need to calculate the aggregation of these subject lists
       //   Then we output group values with result values behind it.
       //
       String counterName = stepname+" AGG";
