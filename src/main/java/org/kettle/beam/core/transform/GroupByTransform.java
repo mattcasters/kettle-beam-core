@@ -75,7 +75,8 @@ public class GroupByTransform extends PTransform<PCollection<KettleRow>, PCollec
       // Split the KettleRow into GroupFields-KettleRow and SubjectFields-KettleRow
       //
       PCollection<KV<KettleRow, KettleRow>> groupSubjects = input.apply( ParDo.of(
-        new KettleKeyValueFn( rowMetaJson, stepPluginClasses, xpPluginClasses, groupFields, subjects, stepname ) ) );
+        new KettleKeyValueFn( rowMetaJson, stepPluginClasses, xpPluginClasses, groupFields, subjects, stepname )
+      ). );
 
       // Now we need to aggregate the groups with a Combine
       GroupByKey<KettleRow, KettleRow> byKey = GroupByKey.<KettleRow, KettleRow>create();
