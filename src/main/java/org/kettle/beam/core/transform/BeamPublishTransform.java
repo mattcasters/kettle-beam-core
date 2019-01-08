@@ -119,8 +119,6 @@ public class BeamPublishTransform extends PTransform<PCollection<KettleRow>, PDo
   }
 
 
-
-
   /**
    * Gets stepname
    *

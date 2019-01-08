@@ -31,6 +31,7 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
   private String separator;
   private String enclosure;
   private String rowMetaJson;
+  private boolean windowed;
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
 
@@ -41,13 +42,14 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
   public BeamOutputTransform() {
   }
 
-  public BeamOutputTransform( String stepname, String outputLocation, String filePrefix, String fileSuffix, String separator, String enclosure, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public BeamOutputTransform( String stepname, String outputLocation, String filePrefix, String fileSuffix, String separator, String enclosure, boolean windowed, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.stepname = stepname;
     this.outputLocation = outputLocation;
     this.filePrefix = filePrefix;
     this.fileSuffix = fileSuffix;
     this.separator = separator;
     this.enclosure = enclosure;
+    this.windowed = windowed;
     this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
@@ -85,6 +87,13 @@ public class BeamOutputTransform extends PTransform<PCollection<KettleRow>, PDon
       if (StringUtils.isNotEmpty( fileSuffix )) {
         write = write.withSuffix( fileSuffix );
       }
+
+      // For streaming data sources...
+      //
+      if (windowed) {
+        write = write.withWindowedWrites().withNumShards( 4 ); // TODO config
+      }
+
       stringCollection.apply(write);
 
       // Get it over with

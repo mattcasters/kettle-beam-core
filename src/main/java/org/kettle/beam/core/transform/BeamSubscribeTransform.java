@@ -4,17 +4,17 @@ import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.io.gcp.pubsub.PubsubMessage;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
+import org.apache.commons.lang.StringUtils;
 import org.kettle.beam.core.BeamDefaults;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
-import org.kettle.beam.core.fn.StringToKettleFn;
+import org.kettle.beam.core.fn.PubsubMessageToKettleRowFn;
+import org.kettle.beam.core.fn.StringToKettleRowFn;
 import org.kettle.beam.core.util.JsonRowMeta;
-import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +30,7 @@ public class BeamSubscribeTransform extends PTransform<PBegin, PCollection<Kettl
   // These non-transient privates get serialized to spread across nodes
   //
   private String stepname;
+  private String subscription;
   private String topic;
   private String messageType;
   private String rowMetaJson;
@@ -48,9 +49,11 @@ public class BeamSubscribeTransform extends PTransform<PBegin, PCollection<Kettl
   public BeamSubscribeTransform() {
   }
 
-  public BeamSubscribeTransform( @Nullable String name, String stepname, String topic, String messageType, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public BeamSubscribeTransform( @Nullable String name, String stepname, String subscription, String topic, String messageType, String rowMetaJson, List<String> stepPluginClasses,
+                                 List<String> xpPluginClasses ) {
     super( name );
     this.stepname = stepname;
+    this.subscription = subscription;
     this.topic = topic;
     this.messageType = messageType;
     this.rowMetaJson = rowMetaJson;
@@ -61,7 +64,7 @@ public class BeamSubscribeTransform extends PTransform<PBegin, PCollection<Kettl
   @Override public PCollection<KettleRow> expand( PBegin input ) {
 
     try {
-      if (rowMeta==null) {
+      if ( rowMeta == null ) {
         // Only initialize once on this node/vm
         //
         BeamKettle.init( stepPluginClasses, xpPluginClasses );
@@ -82,13 +85,33 @@ public class BeamSubscribeTransform extends PTransform<PBegin, PCollection<Kettl
       PCollection<KettleRow> output;
 
       if ( BeamDefaults.PUBSUB_MESSAGE_TYPE_STRING.equalsIgnoreCase( messageType ) ) {
-        PCollection<String> stringPCollection = PubsubIO.readStrings().fromTopic( topic ).expand( input );
-        output = stringPCollection.apply(stepname, ParDo.of( new StringToKettleRowFn() ));
+
+        PubsubIO.Read<String> stringRead = PubsubIO.readStrings();
+        if ( StringUtils.isNotEmpty(subscription)) {
+          stringRead = stringRead.fromSubscription( subscription );
+        } else {
+          stringRead = stringRead.fromTopic( topic);
+        }
+        PCollection<String> stringPCollection = stringRead.expand( input );
+        output = stringPCollection.apply( stepname, ParDo.of(
+          new StringToKettleRowFn( stepname, rowMetaJson, stepPluginClasses, xpPluginClasses )
+        ) );
+
       } else if ( BeamDefaults.PUBSUB_MESSAGE_TYPE_MESSAGE.equalsIgnoreCase( messageType ) ) {
-        PCollection<PubsubMessage> messagesPCollection = PubsubIO.readMessages().fromTopic( topic ).expand( input );
-        output = messagesPCollection.apply( stepname, ParDo.of( new PubsubMessageToKettleRowFn() ) );
+
+        PubsubIO.Read<PubsubMessage> messageRead = PubsubIO.readMessages();
+        if (StringUtils.isNotEmpty( subscription )) {
+          messageRead = messageRead.fromSubscription( subscription );
+        } else {
+          messageRead = messageRead.fromTopic( topic );
+        }
+        PCollection<PubsubMessage> messagesPCollection = messageRead.expand( input );
+        output = messagesPCollection.apply( stepname, ParDo.of(
+          new PubsubMessageToKettleRowFn( stepname, rowMetaJson, stepPluginClasses, xpPluginClasses )
+        ) );
+
       } else {
-        throw new RuntimeException( "Unsupported message type: "+messageType );
+        throw new RuntimeException( "Unsupported message type: " + messageType );
       }
 
       return output;
@@ -98,36 +121,6 @@ public class BeamSubscribeTransform extends PTransform<PBegin, PCollection<Kettl
       throw new RuntimeException( "Error in beam subscribe transform", e );
     }
   }
-
-
-  private class StringToKettleRowFn extends DoFn<String, KettleRow> {
-    @ProcessElement
-    public void processElement( ProcessContext processContext ) {
-      String string = processContext.element();
-      inputCounter.inc();
-
-      Object[] outputRow = RowDataUtil.allocateRowData(rowMeta.size());
-      outputRow[0] = string;
-
-      processContext.output( new KettleRow(outputRow) );
-      writtenCounter.inc();
-    }
-  }
-
-  private class PubsubMessageToKettleRowFn extends DoFn<PubsubMessage, KettleRow> {
-    @ProcessElement
-    public void processElement( ProcessContext processContext ) {
-      PubsubMessage message = processContext.element();
-      inputCounter.inc();
-
-      Object[] outputRow = RowDataUtil.allocateRowData(rowMeta.size());
-      outputRow[0] = message; // Serializable
-
-      processContext.output( new KettleRow(outputRow) );
-      writtenCounter.inc();
-    }
-  }
-
 
   /**
    * Gets stepname
