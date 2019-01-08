@@ -10,6 +10,8 @@ public class BeamDefaults {
   public static final String STRING_MEMORY_GROUP_BY_PLUGIN_ID = "MemoryGroupBy";
   public static final String STRING_MERGE_JOIN_PLUGIN_ID = "MergeJoin";
 
+  public static final String STRING_BEAM_WINDOW_PLUGIN_ID = "BeamWindow";
+
   public static final String STRING_KETTLE_BEAM = "Kettle Beam";
 
   public static final String PUBSUB_MESSAGE_TYPE_AVROS    = "Avros";
@@ -22,6 +24,19 @@ public class BeamDefaults {
     // PUBSUB_MESSAGE_TYPE_PROTOBUF,
     PUBSUB_MESSAGE_TYPE_STRING,
     PUBSUB_MESSAGE_TYPE_MESSAGE,
+  };
+
+
+  public static final String WINDOW_TYPE_FIXED    = "Fixed";
+  public static final String WINDOW_TYPE_SLIDING = "Sliding";
+  public static final String WINDOW_TYPE_SESSION = "Session";
+  public static final String WINDOW_TYPE_GLOBAL = "Global";
+
+  public static final String[] WINDOW_TYPES = new String[] {
+    WINDOW_TYPE_FIXED,
+    WINDOW_TYPE_SLIDING,
+    WINDOW_TYPE_SESSION,
+    WINDOW_TYPE_GLOBAL
   };
 
 }

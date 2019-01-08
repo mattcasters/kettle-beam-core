@@ -24,6 +24,9 @@ public class BeamKettle {
 
   private static final Logger LOG = LoggerFactory.getLogger( BeamKettle.class );
 
+  public static final boolean isInitialized() {
+    return KettleEnvironment.isInitialized();
+  }
 
   public static final void init( List<String> stepPluginClasses, List<String> xpPluginClasses ) throws KettleException {
     PluginRegistry registry = PluginRegistry.getInstance();
