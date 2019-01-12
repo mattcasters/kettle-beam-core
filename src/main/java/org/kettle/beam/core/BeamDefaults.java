@@ -9,7 +9,8 @@ public class BeamDefaults {
   public static final String STRING_MERGE_JOIN_PLUGIN_ID = "MergeJoin";
   public static final String STRING_BEAM_WINDOW_PLUGIN_ID = "BeamWindow";
   public static final String STRING_BEAM_TIMESTAMP_PLUGIN_ID = "BeamTimestamp";
-
+  public static final String STRING_BEAM_BIGQUERY_INPUT_PLUGIN_ID = "BeamBQInput";
+  public static final String STRING_BEAM_BIGQUERY_OUTPUT_PLUGIN_ID = "BeamBQOutput";
 
   public static final String STRING_KETTLE_BEAM = "Kettle Beam";
 
