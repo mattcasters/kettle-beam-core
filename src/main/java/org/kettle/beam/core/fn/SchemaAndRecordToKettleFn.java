@@ -59,7 +59,6 @@ public class SchemaAndRecordToKettleFn implements SerializableFunction<SchemaAnd
 
       GenericRecord record = schemaAndRecord.getRecord();
       TableSchema tableSchema = schemaAndRecord.getTableSchema();
-      inputCounter.inc();
 
       if ( rowMeta == null ) {
 
@@ -105,6 +104,8 @@ public class SchemaAndRecordToKettleFn implements SerializableFunction<SchemaAnd
 
         initCounter.inc();
       }
+
+      inputCounter.inc();
 
       // Convert to the requested Kettle Data types
       //
