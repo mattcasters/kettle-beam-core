@@ -1,35 +1,30 @@
 package org.kettle.beam.core.fn;
 
-import com.google.api.services.bigquery.model.TableCell;
 import com.google.api.services.bigquery.model.TableFieldSchema;
-import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TableSchema;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.beam.sdk.io.gcp.bigquery.BigQueryUtils;
+import org.apache.avro.util.Utf8;
 import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.util.JsonRowMeta;
-import org.pentaho.di.core.exception.KettleException;
-import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
-import org.pentaho.di.core.row.value.ValueMetaString;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
 /**
  * BigQuery Avro SchemaRecord to KettleRow
  */
-public class SchemaAndRecordToKettleFn implements SerializableFunction<SchemaAndRecord, KettleRow> {
+public class BQSchemaAndRecordToKettleFn implements SerializableFunction<SchemaAndRecord, KettleRow> {
 
   private String stepname;
   private String rowMetaJson;
@@ -42,11 +37,12 @@ public class SchemaAndRecordToKettleFn implements SerializableFunction<SchemaAnd
   private transient Counter errorCounter;
 
   // Log and count parse errors.
-  private static final Logger LOG = LoggerFactory.getLogger( SchemaAndRecordToKettleFn.class );
+  private static final Logger LOG = LoggerFactory.getLogger( BQSchemaAndRecordToKettleFn.class );
 
   private transient RowMetaInterface rowMeta;
+  private transient SimpleDateFormat simpleDateFormat;
 
-  public SchemaAndRecordToKettleFn( String stepname, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public BQSchemaAndRecordToKettleFn( String stepname, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.stepname = stepname;
     this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
@@ -102,6 +98,8 @@ public class SchemaAndRecordToKettleFn implements SerializableFunction<SchemaAnd
           }
         }
 
+        simpleDateFormat = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss" );
+        simpleDateFormat.setLenient( true );
         initCounter.inc();
       }
 
@@ -128,10 +126,10 @@ public class SchemaAndRecordToKettleFn implements SerializableFunction<SchemaAnd
               row[index] = (Boolean)srcData;
               break;
             case ValueMetaInterface.TYPE_DATE:
-              // We get a Long
+              // We get a Long back
               //
-              long timeInMicroseconds = (long)srcData;
-              row[index] = new Date(timeInMicroseconds/1000);
+              String datetimeString = ((Utf8) srcData).toString();
+              row[index] = simpleDateFormat.parse( datetimeString );
               break;
             default:
               throw new RuntimeException("Conversion from Avro JSON to Kettle is not yet supported for Kettle data type '"+valueMeta.getTypeDesc()+"'");
@@ -155,7 +153,7 @@ public class SchemaAndRecordToKettleFn implements SerializableFunction<SchemaAnd
   //  From:
   //         https://cloud.google.com/dataprep/docs/html/BigQuery-Data-Type-Conversions_102563896
   //
-  private enum AvroType {
+  public enum AvroType {
     STRING(ValueMetaInterface.TYPE_STRING),
     BYTES(ValueMetaInterface.TYPE_STRING),
     INTEGER(ValueMetaInterface.TYPE_INTEGER),

@@ -1,22 +1,16 @@
 package org.kettle.beam.core.transform;
 
 import com.google.api.services.bigquery.model.TableReference;
-import com.google.api.services.bigquery.model.TableRow;
-import com.google.api.services.bigquery.model.TableSchema;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
-import org.apache.beam.sdk.io.gcp.bigquery.SchemaAndRecord;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ParDo;
-import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.PBegin;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.commons.lang.StringUtils;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
-import org.kettle.beam.core.fn.SchemaAndRecordToKettleFn;
-import org.pentaho.di.core.row.RowDataUtil;
+import org.kettle.beam.core.fn.BQSchemaAndRecordToKettleFn;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +60,7 @@ public class BeamBQInputTransform extends PTransform<PBegin, PCollection<KettleR
 
       // Function to convert from Avro to Kettle rows
       //
-      SchemaAndRecordToKettleFn toKettleFn = new SchemaAndRecordToKettleFn( stepname, rowMetaJson, stepPluginClasses, xpPluginClasses );
+      BQSchemaAndRecordToKettleFn toKettleFn = new BQSchemaAndRecordToKettleFn( stepname, rowMetaJson, stepPluginClasses, xpPluginClasses );
 
       TableReference tableReference = new TableReference();
       if (StringUtils.isNotEmpty( projectId )) {

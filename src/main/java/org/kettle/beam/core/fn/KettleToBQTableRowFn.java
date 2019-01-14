@@ -3,9 +3,7 @@ package org.kettle.beam.core.fn;
 import com.google.api.services.bigquery.model.TableRow;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
-import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.SerializableFunction;
-import org.apache.commons.lang.StringUtils;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.util.JsonRowMeta;
@@ -14,9 +12,11 @@ import org.pentaho.di.core.row.ValueMetaInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
-public class KettleToTableRowFn implements SerializableFunction<KettleRow, TableRow> {
+public class KettleToBQTableRowFn implements SerializableFunction<KettleRow, TableRow> {
 
   private String counterName;
   private String rowMetaJson;
@@ -29,10 +29,12 @@ public class KettleToTableRowFn implements SerializableFunction<KettleRow, Table
   private transient Counter outputCounter;
   private transient Counter errorCounter;
 
-  // Log and count parse errors.
-  private static final Logger LOG = LoggerFactory.getLogger( KettleToTableRowFn.class );
+  private transient SimpleDateFormat simpleDateFormat;
 
-  public KettleToTableRowFn( String counterName, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  // Log and count parse errors.
+  private static final Logger LOG = LoggerFactory.getLogger( KettleToBQTableRowFn.class );
+
+  public KettleToBQTableRowFn( String counterName, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.counterName = counterName;
     this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
@@ -54,6 +56,7 @@ public class KettleToTableRowFn implements SerializableFunction<KettleRow, Table
         outputCounter = Metrics.counter( "output", counterName );
         errorCounter = Metrics.counter( "error", counterName );
 
+        simpleDateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSS" );
         initCounter.inc();
       }
 
@@ -67,7 +70,11 @@ public class KettleToTableRowFn implements SerializableFunction<KettleRow, Table
           switch ( valueMeta.getType() ) {
             case ValueMetaInterface.TYPE_STRING: tableRow.put( valueMeta.getName(), valueMeta.getString( valueData ) ); break;
             case ValueMetaInterface.TYPE_INTEGER: tableRow.put( valueMeta.getName(), valueMeta.getInteger( valueData ) ); break;
-            case ValueMetaInterface.TYPE_DATE: tableRow.put( valueMeta.getName(), valueMeta.getInteger( valueData ) ); break; // Epoch time
+            case ValueMetaInterface.TYPE_DATE:
+              Date date = valueMeta.getDate( valueData );
+              String formattedDate = simpleDateFormat.format( date );
+              tableRow.put( valueMeta.getName(), formattedDate);
+              break;
             case ValueMetaInterface.TYPE_BOOLEAN: tableRow.put( valueMeta.getName(), valueMeta.getBoolean( valueData ) ); break;
             case ValueMetaInterface.TYPE_NUMBER: tableRow.put( valueMeta.getName(), valueMeta.getNumber( valueData ) ); break;
             default:

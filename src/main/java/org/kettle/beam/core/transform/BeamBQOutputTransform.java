@@ -5,20 +5,17 @@ import com.google.api.services.bigquery.model.TableReference;
 import com.google.api.services.bigquery.model.TableRow;
 import com.google.api.services.bigquery.model.TableSchema;
 import org.apache.beam.sdk.io.gcp.bigquery.BigQueryIO;
-import org.apache.beam.sdk.io.gcp.bigquery.WriteResult;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.PTransform;
-import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.SerializableFunction;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.PDone;
 import org.apache.commons.lang.StringUtils;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
-import org.kettle.beam.core.fn.KettleToTableRowFn;
+import org.kettle.beam.core.fn.KettleToBQTableRowFn;
 import org.kettle.beam.core.util.JsonRowMeta;
-import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.slf4j.Logger;
@@ -86,7 +83,7 @@ public class BeamBQOutputTransform extends PTransform<PCollection<KettleRow>, PD
         switch(valueMeta.getType()){
           case ValueMetaInterface.TYPE_STRING: schemaField.setType( "STRING" ); break;
           case ValueMetaInterface.TYPE_INTEGER: schemaField.setType( "INTEGER" ); break;
-          case ValueMetaInterface.TYPE_DATE: schemaField.setType( "DATE" ); break;
+          case ValueMetaInterface.TYPE_DATE: schemaField.setType( "DATETIME" ); break;
           case ValueMetaInterface.TYPE_BOOLEAN: schemaField.setType( "BOOLEAN" ); break;
           case ValueMetaInterface.TYPE_NUMBER: schemaField.setType( "FLOAT" ); break;
           default:
@@ -96,7 +93,7 @@ public class BeamBQOutputTransform extends PTransform<PCollection<KettleRow>, PD
       }
       tableSchema.setFields( schemaFields );
 
-      SerializableFunction<KettleRow, TableRow> formatFunction = new KettleToTableRowFn( stepname, rowMetaJson, stepPluginClasses, xpPluginClasses );
+      SerializableFunction<KettleRow, TableRow> formatFunction = new KettleToBQTableRowFn( stepname, rowMetaJson, stepPluginClasses, xpPluginClasses );
 
       BigQueryIO.Write<KettleRow> bigQueryWrite = BigQueryIO
         .<KettleRow>write()
