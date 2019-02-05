@@ -79,6 +79,11 @@
       <artifactId>beam-runners-apex</artifactId>
       <version>${apache-beam-version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.beam</groupId>
+      <artifactId>beam-sdks-java-io-kafka</artifactId>
+      <version>${apache-beam-version}</version>
+    </dependency>
 
     <dependency>
       <groupId>com.google.cloud</groupId>
@@ -206,6 +211,11 @@
         <artifactId>beam-sdks-java-io-google-cloud-platform</artifactId>
         <version>${apache-beam-version}</version>
       </dependency>
+      <dependency>
+        <groupId>org.apache.beam</groupId>
+        <artifactId>beam-sdks-java-io-kafka</artifactId>
+        <version>${apache-beam-version}</version>
+      </dependency>
 
       <dependency>
         <groupId>com.google.cloud</groupId>
@@ -233,5 +243,5 @@
   </dependencyManagement>
 
   <groupId>kettle-beam</groupId>
-  <version>0.2.0-SNAPSHOT</version>
+  <version>0.3.0-SNAPSHOT</version>
 </project>

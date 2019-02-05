@@ -3,6 +3,7 @@ package org.kettle.beam.core.fn;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
+import org.apache.beam.sdk.values.KV;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.util.JsonRowMeta;
@@ -13,14 +14,16 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-public class StringToKettleRowFn extends DoFn<String, KettleRow> {
+public class KettleRowToKVStringStringFn extends DoFn<KettleRow, KV<String,String>> {
 
   private String rowMetaJson;
   private String stepname;
+  private int keyIndex;
+  private int valueIndex;
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
 
-  private static final Logger LOG = LoggerFactory.getLogger( StringToKettleRowFn.class );
+  private static final Logger LOG = LoggerFactory.getLogger( KettleRowToKVStringStringFn.class );
   private final Counter numErrors = Metrics.counter( "main", "BeamSubscribeTransformErrors" );
 
   private RowMetaInterface rowMeta;
@@ -28,14 +31,16 @@ public class StringToKettleRowFn extends DoFn<String, KettleRow> {
   private transient Counter inputCounter;
   private transient Counter writtenCounter;
 
-  public StringToKettleRowFn( String stepname, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public KettleRowToKVStringStringFn( String stepname, int keyIndex, int valueIndex, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.stepname = stepname;
+    this.keyIndex = keyIndex;
+    this.valueIndex = valueIndex;
     this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
   }
 
-  @DoFn.ProcessElement
+  @ProcessElement
   public void processElement( ProcessContext processContext ) {
     try {
       if ( rowMeta == null ) {
@@ -50,19 +55,19 @@ public class StringToKettleRowFn extends DoFn<String, KettleRow> {
         Metrics.counter( "init", stepname ).inc();
       }
 
-      String string = processContext.element();
+      KettleRow kettleRow = processContext.element();
       inputCounter.inc();
 
-      Object[] outputRow = RowDataUtil.allocateRowData( rowMeta.size() );
-      outputRow[ 0 ] = string;
+      String key = rowMeta.getString(kettleRow.getRow(), keyIndex);
+      String value = rowMeta.getString(kettleRow.getRow(), valueIndex);
 
-      processContext.output( new KettleRow( outputRow ) );
+      processContext.output( KV.of( key, value ) );
       writtenCounter.inc();
 
     } catch ( Exception e ) {
       numErrors.inc();
-      LOG.error( "Error in String to Kettle Row conversion function", e );
-      throw new RuntimeException( "Error in String to Kettle Row conversion function", e );
+      LOG.error( "Error in KettleRow to KV<String,String> function", e );
+      throw new RuntimeException( "Error in KettleRow to KV<String,String> function", e );
     }
   }
 }

@@ -1,19 +1,6 @@
 package org.kettle.beam.core;
 
 public class BeamDefaults {
-  public static final String STRING_BEAM_INPUT_PLUGIN_ID = "BeamInput";
-  public static final String STRING_BEAM_OUTPUT_PLUGIN_ID = "BeamOutput";
-  public static final String STRING_BEAM_SUBSCRIBE_PLUGIN_ID = "BeamSubscribe";
-  public static final String STRING_BEAM_PUBLISH_PLUGIN_ID = "BeamPublish";
-  public static final String STRING_MEMORY_GROUP_BY_PLUGIN_ID = "MemoryGroupBy";
-  public static final String STRING_MERGE_JOIN_PLUGIN_ID = "MergeJoin";
-  public static final String STRING_BEAM_WINDOW_PLUGIN_ID = "BeamWindow";
-  public static final String STRING_BEAM_TIMESTAMP_PLUGIN_ID = "BeamTimestamp";
-  public static final String STRING_BEAM_BIGQUERY_INPUT_PLUGIN_ID = "BeamBQInput";
-  public static final String STRING_BEAM_BIGQUERY_OUTPUT_PLUGIN_ID = "BeamBQOutput";
-
-  public static final String STRING_KETTLE_BEAM = "Kettle Beam";
-
   public static final String PUBSUB_MESSAGE_TYPE_AVROS    = "Avros";
   public static final String PUBSUB_MESSAGE_TYPE_PROTOBUF = "protobuf";
   public static final String PUBSUB_MESSAGE_TYPE_STRING   = "String";

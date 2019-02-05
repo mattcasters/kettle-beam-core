@@ -1,5 +1,6 @@
 package org.kettle.beam.core.transform;
 
+import org.apache.beam.sdk.io.Compression;
 import org.apache.beam.sdk.io.TextIO;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
@@ -51,15 +52,24 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
       //
       BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
+      System.out.println("-------------- TextIO.Read from "+inputLocation+" (UNCOMPRESSED)");
+
+      TextIO.Read ioRead = TextIO.read()
+        .from( inputLocation )
+        .withCompression( Compression.UNCOMPRESSED )
+        ;
+
+      StringToKettleFn stringToKettleFn = new StringToKettleFn( stepname, rowMetaJson, separator, stepPluginClasses, xpPluginClasses );
+
       PCollection<KettleRow> output = input
 
         // We read a bunch of Strings, one per line basically
         //
-        .apply( stepname + " READ FILE", TextIO.read().from( inputLocation ) )
+        .apply( stepname + " READ FILE",  ioRead )
 
         // We need to transform these lines into Kettle fields
         //
-        .apply( stepname, ParDo.of( new StringToKettleFn( stepname, rowMetaJson, separator, stepPluginClasses, xpPluginClasses ) ) );
+        .apply( stepname, ParDo.of( stringToKettleFn ) );
 
       return output;
 
