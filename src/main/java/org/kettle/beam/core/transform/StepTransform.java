@@ -53,6 +53,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
   protected String stepname;
   protected String stepPluginId;
   protected String inputRowMetaJson;
+  protected boolean inputStep;
   protected String stepMetaInterfaceXml;
   protected List<String> targetSteps;
   protected List<String> infoSteps;
@@ -71,7 +72,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
   }
 
   public StepTransform( List<VariableValue> variableValues, String metastoreJson, List<String> stepPluginClasses, List<String> xpPluginClasses,
-                        String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaJson,
+                        String stepname, String stepPluginId, String stepMetaInterfaceXml, String inputRowMetaJson, boolean inputStep,
                         List<String> targetSteps, List<String> infoSteps, List<String> infoRowMetaJsons, List<PCollectionView<List<KettleRow>>> infoCollectionViews ) {
     this.variableValues = variableValues;
     this.metastoreJson = metastoreJson;
@@ -81,6 +82,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     this.stepPluginId = stepPluginId;
     this.stepMetaInterfaceXml = stepMetaInterfaceXml;
     this.inputRowMetaJson = inputRowMetaJson;
+    this.inputStep = inputStep;
     this.targetSteps = targetSteps;
     this.infoSteps = infoSteps;
     this.infoRowMetaJsons = infoRowMetaJsons;
@@ -117,7 +119,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
       // Create a new step function, initializes the step
       //
       StepFn stepFn = new StepFn( variableValues, metastoreJson, stepPluginClasses, xpPluginClasses,
-        stepname, stepPluginId, stepMetaInterfaceXml, inputRowMetaJson,
+        stepname, stepPluginId, stepMetaInterfaceXml, inputRowMetaJson, inputStep,
         targetSteps, infoSteps, infoRowMetaJsons );
 
       // The actual step functionality
@@ -166,6 +168,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     protected List<String> targetSteps;
     protected List<String> infoSteps;
     protected List<String> infoRowMetaJsons;
+    protected boolean inputStep;
 
     protected List<PCollection<KettleRow>> infoCollections;
 
@@ -208,7 +211,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     //
 
     public StepFn( List<VariableValue> variableValues, String metastoreJson, List<String> stepPluginClasses, List<String> xpPluginClasses, String stepname, String stepPluginId,
-                   String stepMetaInterfaceXml, String inputRowMetaJson,
+                   String stepMetaInterfaceXml, String inputRowMetaJson, boolean inputStep,
                    List<String> targetSteps, List<String> infoSteps, List<String> infoRowMetaJsons ) {
       this();
       this.variableValues = variableValues;
@@ -219,6 +222,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
       this.stepPluginId = stepPluginId;
       this.stepMetaInterfaceXml = stepMetaInterfaceXml;
       this.inputRowMetaJson = inputRowMetaJson;
+      this.inputStep = inputStep;
       this.targetSteps = targetSteps;
       this.infoSteps = infoSteps;
       this.infoRowMetaJsons = infoRowMetaJsons;
@@ -267,7 +271,10 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
           // Create an Injector step with the right row layout...
           // This will help all steps see the row layout statically...
           //
-          StepMeta mainInjectorStepMeta = createInjectorStep( transMeta, INJECTOR_STEP_NAME, inputRowMeta, 200, 200 );
+          StepMeta mainInjectorStepMeta = null;
+          if (!inputStep) {
+            mainInjectorStepMeta = createInjectorStep( transMeta, INJECTOR_STEP_NAME, inputRowMeta, 200, 200 );
+          }
 
           // Our main step writes to a bunch of targets
           // Add a dummy step for each one so the step can target them
@@ -326,8 +333,9 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
           stepMeta.setLocation( 400, 200 );
           stepMeta.setDraw( true );
           transMeta.addStep( stepMeta );
-          transMeta.addTransHop( new TransHopMeta( mainInjectorStepMeta, stepMeta ) );
-
+          if (!inputStep) {
+            transMeta.addTransHop( new TransHopMeta( mainInjectorStepMeta, stepMeta ) );
+          }
           // The target hops as well
           //
           for ( StepMeta targetStepMeta : targetStepMetas ) {
@@ -344,11 +352,10 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
 
           // For Matt debugging this spiderweb.
-
-          FileOutputStream fos = new FileOutputStream( "/tmp/" + ( stepname.replace( "/", "-" ) ) + ".ktr" );
-          fos.write( transMeta.getXML().getBytes() );
-          fos.close();
-
+          //
+          // FileOutputStream fos = new FileOutputStream( "/tmp/" + ( stepname.replace( "/", "-" ) ) + ".ktr" );
+          // fos.write( transMeta.getXML().getBytes() );
+          // fos.close();
 
           // This one is single threaded folks
           //
@@ -363,7 +370,10 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
           // Create producers so we can efficiently pass data
           //
-          rowProducer = trans.addRowProducer( INJECTOR_STEP_NAME, 0 );
+          rowProducer = null;
+          if (!inputStep) {
+            rowProducer = trans.addRowProducer( INJECTOR_STEP_NAME, 0 );
+          }
           infoRowProducers = new ArrayList<>();
           for ( String infoStep : infoSteps ) {
             RowProducer infoRowProducer = trans.addRowProducer( infoStep, 0 );
@@ -372,8 +382,10 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
           // Find the right interfaces for execution later...
           //
-          StepMetaDataCombi injectorCombi = findCombi( trans, INJECTOR_STEP_NAME );
-          stepCombis.add( injectorCombi );
+          if (!inputStep) {
+            StepMetaDataCombi injectorCombi = findCombi( trans, INJECTOR_STEP_NAME );
+            stepCombis.add( injectorCombi );
+          }
 
           StepMetaDataCombi stepCombi = findCombi( trans, stepname );
           stepCombis.add( stepCombi );
@@ -444,7 +456,6 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
           resultRows = new ArrayList<>();
 
-
           // Copy the info data sets to the info steps...
           // We do this only once so all subsequent rows can use this.
           //
@@ -483,7 +494,8 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
         // Get one row from the context main input and make a copy so we can change it.
         //
-        KettleRow inputRow = KettleBeamUtil.copyKettleRow( context.element(), inputRowMeta );
+        KettleRow originalInputRow = context.element();
+        KettleRow inputRow = KettleBeamUtil.copyKettleRow( originalInputRow, inputRowMeta );
         readCounter.inc();
 
         // Empty all the row buffers for another iteration
@@ -493,10 +505,11 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
           targetResultRowsList.get( t ).clear();
         }
 
-
         // Pass the row to the input rowset
         //
-        rowProducer.putRow( inputRowMeta, inputRow.getRow() );
+        if (!inputStep) {
+          rowProducer.putRow( inputRowMeta, inputRow.getRow() );
+        }
 
         // Execute all steps in the transformation
         //
@@ -560,7 +573,5 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
       }
       throw new RuntimeException( "Configuration error, step '" + stepname + "' not found in transformation" );
     }
-
-
   }
 }
