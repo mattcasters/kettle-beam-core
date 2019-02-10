@@ -3,9 +3,7 @@ package org.kettle.beam.core.fn;
 import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
-import org.apache.beam.sdk.transforms.windowing.PaneInfo;
 import org.apache.commons.lang.StringUtils;
-import org.joda.time.DateTime;
 import org.joda.time.Instant;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
@@ -39,7 +37,7 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
   // Log and count parse errors.
   private static final Logger LOG = LoggerFactory.getLogger( TimestampFn.class );
 
-  private transient RowMetaInterface rowMeta;
+  private transient RowMetaInterface inputRowMeta;
   private transient ValueMetaInterface fieldValueMeta;
 
   public TimestampFn( String stepname, String rowMetaJson, String fieldName, boolean getTimestamp, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
@@ -56,13 +54,13 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
 
     try {
 
-      if ( rowMeta == null ) {
+      if ( inputRowMeta == null ) {
 
         // Just to make sure
         //
         BeamKettle.init( stepPluginClasses, xpPluginClasses );
 
-        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
+        inputRowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
         initCounter = Metrics.counter( "init", stepname );
         readCounter = Metrics.counter( "read", stepname );
@@ -70,12 +68,12 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
         errorCounter = Metrics.counter( "error", stepname );
 
         fieldIndex = -1;
-        if (!getTimestamp && StringUtils.isNotEmpty( fieldName )) {
-          fieldIndex = rowMeta.indexOfValue( fieldName );
-          if (fieldIndex<0) {
-            throw new RuntimeException( "Field '"+fieldName+"' couldn't be found in put : "+rowMeta.toString() );
+        if ( !getTimestamp && StringUtils.isNotEmpty( fieldName ) ) {
+          fieldIndex = inputRowMeta.indexOfValue( fieldName );
+          if ( fieldIndex < 0 ) {
+            throw new RuntimeException( "Field '" + fieldName + "' couldn't be found in put : " + inputRowMeta.toString() );
           }
-          fieldValueMeta = rowMeta.getValueMeta( fieldIndex );
+          fieldValueMeta = inputRowMeta.getValueMeta( fieldIndex );
         }
 
         initCounter.inc();
@@ -88,14 +86,17 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
       //
       Instant instant;
 
-      if (getTimestamp) {
-       instant = processContext.timestamp();
-        Object[] outputRow = RowDataUtil.createResizedCopy(kettleRow.getRow(), rowMeta.size());
+      if ( getTimestamp ) {
+        instant = processContext.timestamp();
+
+        // Add one row to the stream.
+        //
+        Object[] outputRow = RowDataUtil.createResizedCopy( kettleRow.getRow(), inputRowMeta.size() + 1 );
 
         // Kettle "Date" type field output: java.util.Date.
         // Use the last field in the output
         //
-        outputRow[rowMeta.size()-1] = instant.toDate();
+        outputRow[ inputRowMeta.size() ] = instant.toDate();
         kettleRow = new KettleRow( outputRow );
       } else {
         if ( fieldIndex < 0 ) {
