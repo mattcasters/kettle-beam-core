@@ -21,6 +21,7 @@ import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.fn.KettleRowToKVStringStringFn;
 import org.kettle.beam.core.fn.KettleToBQTableRowFn;
 import org.kettle.beam.core.util.JsonRowMeta;
+import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.slf4j.Logger;
@@ -53,6 +54,8 @@ public class BeamKafkaOutputTransform extends PTransform<PCollection<KettleRow>,
     this.stepname = stepname;
     this.bootstrapServers = bootstrapServers;
     this.topic = topic;
+    this.keyField = keyField;
+    this.messageField = messageField;
     this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
@@ -70,7 +73,13 @@ public class BeamKafkaOutputTransform extends PTransform<PCollection<KettleRow>,
       RowMetaInterface rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
       int keyIndex = rowMeta.indexOfValue( keyField );
+      if (keyIndex<0) {
+        throw new KettleException( "Unable to find key field "+keyField+" in input row: "+rowMeta.toString() );
+      }
       int messageIndex = rowMeta.indexOfValue( messageField );
+      if (messageIndex<0) {
+        throw new KettleException( "Unable to find message field "+messageField+" in input row: "+rowMeta.toString() );
+      }
 
       // First convert the input stream of KettleRows to KV<String,String> for the keys and messages
       //
