@@ -52,7 +52,7 @@ public class BeamInputTransform extends PTransform<PBegin, PCollection<KettleRow
       //
       BeamKettle.init(stepPluginClasses, xpPluginClasses);
 
-      System.out.println("-------------- TextIO.Read from "+inputLocation+" (UNCOMPRESSED)");
+      // System.out.println("-------------- TextIO.Read from "+inputLocation+" (UNCOMPRESSED)");
 
       TextIO.Read ioRead = TextIO.read()
         .from( inputLocation )
