@@ -36,20 +36,27 @@ public class PubsubMessageToKettleRowFn extends DoFn<PubsubMessage, KettleRow> {
     this.xpPluginClasses = xpPluginClasses;
   }
 
+  @Setup
+  public void setUp() {
+    try {
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+
+      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
+
+      inputCounter = Metrics.counter( "input", stepname );
+      writtenCounter = Metrics.counter( "written", stepname );
+
+      Metrics.counter( "init", stepname ).inc();
+    } catch ( Exception e ) {
+      numErrors.inc();
+      LOG.error( "Error in setup of pub/sub publish messages function", e );
+      throw new RuntimeException( "Error in setup of pub/sub publish messages function", e );
+    }
+  }
+
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
     try {
-      if ( rowMeta == null ) {
-
-        BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-        inputCounter = Metrics.counter( "input", stepname );
-        writtenCounter = Metrics.counter( "written", stepname );
-
-        Metrics.counter( "init", stepname ).inc();
-      }
 
       PubsubMessage message = processContext.element();
       inputCounter.inc();

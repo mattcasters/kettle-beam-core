@@ -49,35 +49,40 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
     this.xpPluginClasses = xpPluginClasses;
   }
 
+  @Setup
+  public void setUp() {
+    try {
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+
+      inputRowMeta = JsonRowMeta.fromJson( rowMetaJson );
+
+      initCounter = Metrics.counter( "init", stepname );
+      readCounter = Metrics.counter( "read", stepname );
+      writtenCounter = Metrics.counter( "written", stepname );
+      errorCounter = Metrics.counter( "error", stepname );
+
+      fieldIndex = -1;
+      if ( !getTimestamp && StringUtils.isNotEmpty( fieldName ) ) {
+        fieldIndex = inputRowMeta.indexOfValue( fieldName );
+        if ( fieldIndex < 0 ) {
+          throw new RuntimeException( "Field '" + fieldName + "' couldn't be found in put : " + inputRowMeta.toString() );
+        }
+        fieldValueMeta = inputRowMeta.getValueMeta( fieldIndex );
+      }
+
+      initCounter.inc();
+    } catch(Exception e) {
+      errorCounter.inc();
+      LOG.error( "Error in setup of adding timestamp to rows : " + e.getMessage() );
+      throw new RuntimeException( "Error setup of adding timestamp to rows", e );
+    }
+  }
+
+
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
 
     try {
-
-      if ( inputRowMeta == null ) {
-
-        // Just to make sure
-        //
-        BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-        inputRowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-        initCounter = Metrics.counter( "init", stepname );
-        readCounter = Metrics.counter( "read", stepname );
-        writtenCounter = Metrics.counter( "written", stepname );
-        errorCounter = Metrics.counter( "error", stepname );
-
-        fieldIndex = -1;
-        if ( !getTimestamp && StringUtils.isNotEmpty( fieldName ) ) {
-          fieldIndex = inputRowMeta.indexOfValue( fieldName );
-          if ( fieldIndex < 0 ) {
-            throw new RuntimeException( "Field '" + fieldName + "' couldn't be found in put : " + inputRowMeta.toString() );
-          }
-          fieldValueMeta = inputRowMeta.getValueMeta( fieldIndex );
-        }
-
-        initCounter.inc();
-      }
 
       KettleRow kettleRow = processContext.element();
       readCounter.inc();

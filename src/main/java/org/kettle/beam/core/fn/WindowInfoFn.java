@@ -51,26 +51,31 @@ public class WindowInfoFn extends DoFn<KettleRow, KettleRow> {
     this.xpPluginClasses = xpPluginClasses;
   }
 
+  @Setup
+  public void setUp() {
+    try {
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+
+      inputRowMeta = JsonRowMeta.fromJson( rowMetaJson );
+
+      initCounter = Metrics.counter( "init", stepname );
+      readCounter = Metrics.counter( "read", stepname );
+      writtenCounter = Metrics.counter( "written", stepname );
+      errorCounter = Metrics.counter( "error", stepname );
+
+      initCounter.inc();
+    } catch(Exception e) {
+      errorCounter.inc();
+      LOG.error( "Error in setup of adding window information to rows : " + e.getMessage() );
+      throw new RuntimeException( "Error in setup of adding window information to rows", e );
+    }
+  }
+
+
   @ProcessElement
   public void processElement( ProcessContext processContext, BoundedWindow window ) {
 
     try {
-
-      if ( inputRowMeta == null ) {
-
-        // Just to make sure
-        //
-        BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-        inputRowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-        initCounter = Metrics.counter( "init", stepname );
-        readCounter = Metrics.counter( "read", stepname );
-        writtenCounter = Metrics.counter( "written", stepname );
-        errorCounter = Metrics.counter( "error", stepname );
-
-        initCounter.inc();
-      }
 
       KettleRow kettleRow = processContext.element();
       readCounter.inc();
@@ -125,6 +130,5 @@ public class WindowInfoFn extends DoFn<KettleRow, KettleRow> {
       throw new RuntimeException( "Error adding window information to rows", e );
     }
   }
-
 
 }

@@ -229,21 +229,14 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
       this.infoRowMetaJsons = infoRowMetaJsons;
     }
 
-
-    @Setup
-    public void setUp() {
-      try {
-        rowBuffer = new ArrayList<>();
-      } catch(Exception e) {
-        numErrors.inc();
-        LOG.info( "Step initialization error :" + e.getMessage() );
-        throw new RuntimeException( "Error initializing StepFn", e );
-      }
-    }
-
-    @Teardown
-    public void tearDown() {
-      // Just GC, it's all fine.
+    /**
+     * Reset the row buffer every time we start a new bundle to prevent the output of double rows
+     *
+     * @param startBundleContext
+     */
+    @StartBundle
+    public void startBundle(StartBundleContext startBundleContext) {
+      rowBuffer = new ArrayList<>();
     }
 
     @ProcessElement

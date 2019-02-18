@@ -49,25 +49,32 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
     this.xpPluginClasses = xpPluginClasses;
   }
 
+  @Setup
+  public void setUp() {
+    try {
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+
+      outputRowMeta = JsonRowMeta.fromJson( outputRowMetaJson );
+      leftKRowMeta = JsonRowMeta.fromJson( leftKRowMetaJson );
+      leftVRowMeta = JsonRowMeta.fromJson( leftVRowMetaJson );
+      rightVRowMeta = JsonRowMeta.fromJson( rightVRowMetaJson );
+
+      initCounter = Metrics.counter( "init", counterName );
+      writtenCounter = Metrics.counter( "written", counterName );
+      errorCounter = Metrics.counter( "error", counterName );
+
+      initCounter.inc();
+    } catch(Exception e) {
+      errorCounter.inc();
+      LOG.error( "Error initializing assembling rows", e);
+      throw new RuntimeException( "Error initializing assembling output KV<row, KV<row, row>>", e );
+    }
+  }
+
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
 
     try {
-      if ( outputRowMeta == null ) {
-
-        BeamKettle.init(stepPluginClasses, xpPluginClasses);
-
-        outputRowMeta = JsonRowMeta.fromJson( outputRowMetaJson );
-        leftKRowMeta = JsonRowMeta.fromJson( leftKRowMetaJson );
-        leftVRowMeta = JsonRowMeta.fromJson( leftVRowMetaJson );
-        rightVRowMeta = JsonRowMeta.fromJson( rightVRowMetaJson );
-
-        initCounter = Metrics.counter( "init", counterName );
-        writtenCounter = Metrics.counter( "written", counterName );
-        errorCounter = Metrics.counter( "error", counterName );
-
-        initCounter.inc();
-      }
 
       KV<KettleRow, KV<KettleRow, KettleRow>> element = processContext.element();
       KV<KettleRow, KettleRow> value = element.getValue();

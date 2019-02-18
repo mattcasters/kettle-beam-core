@@ -36,20 +36,27 @@ public class KVLongStringToKettleRowFn extends DoFn<KV<Long,String>, KettleRow> 
     this.xpPluginClasses = xpPluginClasses;
   }
 
+  @Setup
+  public void setUp() {
+    try {
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+
+      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
+
+      inputCounter = Metrics.counter( "input", stepname );
+      writtenCounter = Metrics.counter( "written", stepname );
+
+      Metrics.counter( "init", stepname ).inc();
+    } catch ( Exception e ) {
+      numErrors.inc();
+      LOG.error( "Error in setup of KV<Long,String> to Kettle Row conversion function", e );
+      throw new RuntimeException( "Error in setup of KV<Long,String> to Kettle Row conversion function", e );
+    }
+  }
+
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
     try {
-      if ( rowMeta == null ) {
-
-        BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-        inputCounter = Metrics.counter( "input", stepname );
-        writtenCounter = Metrics.counter( "written", stepname );
-
-        Metrics.counter( "init", stepname ).inc();
-      }
 
       KV<Long,String> kv = processContext.element();
       inputCounter.inc();

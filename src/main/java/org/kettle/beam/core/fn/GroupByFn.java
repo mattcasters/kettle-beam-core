@@ -52,33 +52,42 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
     this.aggregations = aggregations;
   }
 
+  @Setup
+  public void setUp() {
+    try {
+      BeamKettle.init(stepPluginClasses, xpPluginClasses);
+
+      groupRowMeta = JsonRowMeta.fromJson( groupRowMetaJson );
+      subjectRowMeta = JsonRowMeta.fromJson( subjectRowMetaJson );
+      aggregationTypes = new AggregationType[aggregations.length];
+      for ( int i = 0; i < aggregationTypes.length; i++ ) {
+        aggregationTypes[ i ] = AggregationType.getTypeFromName( aggregations[ i ] );
+      }
+
+      initCounter = Metrics.counter( "init", counterName );
+      readCounter = Metrics.counter( "read", counterName );
+      writtenCounter = Metrics.counter( "written", counterName );
+      errorCounter = Metrics.counter( "error", counterName );
+
+      initCounter.inc();
+    } catch(Exception e) {
+      errorCounter.inc();
+      LOG.error("Error setup of grouping by ", e);
+      throw new RuntimeException( "Unable setup of group by ", e );
+    }
+  }
+
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
 
     try {
-      if ( aggregationTypes == null ) {
 
-        BeamKettle.init(stepPluginClasses, xpPluginClasses);
-
-        groupRowMeta = JsonRowMeta.fromJson( groupRowMetaJson );
-        subjectRowMeta = JsonRowMeta.fromJson( subjectRowMetaJson );
-        aggregationTypes = new AggregationType[aggregations.length];
-        for ( int i = 0; i < aggregationTypes.length; i++ ) {
-          aggregationTypes[ i ] = AggregationType.getTypeFromName( aggregations[ i ] );
-        }
-
-        initCounter = Metrics.counter( "init", counterName );
-        readCounter = Metrics.counter( "read", counterName );
-        writtenCounter = Metrics.counter( "written", counterName );
-        errorCounter = Metrics.counter( "error", counterName );
-
-        initCounter.inc();
-      }
-
+      // Get a KV
+      //
       KV<KettleRow, Iterable<KettleRow>> inputElement = processContext.element();
 
+      // Get the key row
       //
-
       KettleRow groupKettleRow = inputElement.getKey();
       Object[] groupRow = groupKettleRow.getRow();
 

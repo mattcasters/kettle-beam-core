@@ -49,50 +49,57 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
     this.counterName = counterName;
   }
 
+  @Setup
+  public void setUp() {
+    try {
+      // Initialize
+      //
+      BeamKettle.init(stepPluginClasses, xpPluginClasses);
+
+      inputRowMeta = JsonRowMeta.fromJson( inputRowMetaJson );
+
+      // Calculate key indexes
+      //
+      if ( keyFields.length==0) {
+        throw new KettleException( "There are no group fields" );
+      }
+      keyIndexes = new int[ keyFields.length];
+      for ( int i = 0; i< keyFields.length; i++) {
+        keyIndexes[i]=inputRowMeta.indexOfValue( keyFields[i] );
+        if ( keyIndexes[i]<0) {
+          throw new KettleException( "Unable to find group by field '"+ keyFields[i]+"' in input "+inputRowMeta.toString() );
+        }
+      }
+
+      // Calculate the value indexes
+      //
+      valueIndexes =new int[ valueFields.length];
+      for ( int i = 0; i< valueFields.length; i++) {
+        valueIndexes[i] = inputRowMeta.indexOfValue( valueFields[i] );
+        if ( valueIndexes[i]<0) {
+          throw new KettleException( "Unable to find subject by field '"+ valueFields[i]+"' in input "+inputRowMeta.toString() );
+        }
+      }
+
+      initCounter = Metrics.counter( "init", counterName );
+      readCounter = Metrics.counter( "read", counterName );
+      errorCounter = Metrics.counter( "error", counterName );
+
+      // Now that we know everything, we can split the row...
+      //
+      initCounter.inc();
+    } catch(Exception e) {
+      errorCounter.inc();
+      LOG.error("Error setup of splitting row into key and value", e);
+      throw new RuntimeException( "Unable to setup of split row into key and value", e );
+    }
+  }
+
+
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
 
     try {
-
-      if ( inputRowMeta == null ) {
-
-        // Initialize
-        //
-        BeamKettle.init(stepPluginClasses, xpPluginClasses);
-
-        inputRowMeta = JsonRowMeta.fromJson( inputRowMetaJson );
-
-        // Calculate key indexes
-        //
-        if ( keyFields.length==0) {
-          throw new KettleException( "There are no group fields" );
-        }
-        keyIndexes = new int[ keyFields.length];
-        for ( int i = 0; i< keyFields.length; i++) {
-          keyIndexes[i]=inputRowMeta.indexOfValue( keyFields[i] );
-          if ( keyIndexes[i]<0) {
-            throw new KettleException( "Unable to find group by field '"+ keyFields[i]+"' in input "+inputRowMeta.toString() );
-          }
-        }
-
-        // Calculate the value indexes
-        //
-        valueIndexes =new int[ valueFields.length];
-        for ( int i = 0; i< valueFields.length; i++) {
-          valueIndexes[i] = inputRowMeta.indexOfValue( valueFields[i] );
-          if ( valueIndexes[i]<0) {
-            throw new KettleException( "Unable to find subject by field '"+ valueFields[i]+"' in input "+inputRowMeta.toString() );
-          }
-        }
-
-        initCounter = Metrics.counter( "init", counterName );
-        readCounter = Metrics.counter( "read", counterName );
-        errorCounter = Metrics.counter( "error", counterName );
-
-        // Now that we know everything, we can split the row...
-        //
-        initCounter.inc();
-      }
 
       // Get an input row
       //

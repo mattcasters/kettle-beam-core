@@ -42,25 +42,32 @@ public class KettleToStringFn extends DoFn<KettleRow, String> {
     this.xpPluginClasses = xpPluginClasses;
   }
 
+  @Setup
+  public void setUp() {
+    try {
+      // Just to make sure
+      //
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+
+      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
+
+      initCounter = Metrics.counter( "init", counterName );
+      readCounter = Metrics.counter( "read", counterName );
+      outputCounter = Metrics.counter( "output", counterName );
+      errorCounter = Metrics.counter( "error", counterName );
+
+      initCounter.inc();
+    } catch ( Exception e ) {
+      errorCounter.inc();
+      LOG.info( "Parse error on setup of Kettle data to string lines : " + e.getMessage() );
+      throw new RuntimeException( "Error on setup of converting Kettle data to string lines", e );
+    }
+  }
+
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
 
     try {
-      if ( rowMeta == null ) {
-        // Just to make sure
-        //
-        BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-        initCounter = Metrics.counter( "init", counterName );
-        readCounter = Metrics.counter( "read", counterName );
-        outputCounter = Metrics.counter( "output", counterName );
-        errorCounter = Metrics.counter( "error", counterName );
-
-        initCounter.inc();
-      }
-
 
       KettleRow inputRow = processContext.element();
       readCounter.inc();

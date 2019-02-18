@@ -38,24 +38,32 @@ public class PublishStringsFn extends DoFn<KettleRow, String> {
     this.xpPluginClasses = xpPluginClasses;
   }
 
+  @Setup
+  public void setUp() {
+    try {
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+
+      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
+
+      readCounter = Metrics.counter( "read", stepname );
+      outputCounter = Metrics.counter( "output", stepname );
+
+      Metrics.counter( "init", stepname ).inc();
+    } catch ( Exception e ) {
+      numErrors.inc();
+      LOG.error( "Error in setup of pub/sub publish messages function", e );
+      throw new RuntimeException( "Error in setup of pub/sub publish messages function", e );
+    }
+  }
+
   @ProcessElement
   public void processElement( ProcessContext processContext ) {
 
     try {
-      if ( rowMeta == null ) {
-
-        BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-        readCounter = Metrics.counter( "read", stepname );
-        outputCounter = Metrics.counter( "output", stepname );
-
-        Metrics.counter( "init", stepname ).inc();
-      }
 
       KettleRow kettleRow = processContext.element();
       readCounter.inc();
+
       try {
         String string = rowMeta.getString( kettleRow.getRow(), fieldIndex );
         processContext.output( string );
