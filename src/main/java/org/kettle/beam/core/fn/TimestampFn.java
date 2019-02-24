@@ -52,11 +52,12 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
   @Setup
   public void setUp() {
     try {
+      // Initialize Kettle Beam
+      //
       BeamKettle.init( stepPluginClasses, xpPluginClasses );
 
       inputRowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
-      initCounter = Metrics.counter( "init", stepname );
       readCounter = Metrics.counter( "read", stepname );
       writtenCounter = Metrics.counter( "written", stepname );
       errorCounter = Metrics.counter( "error", stepname );
@@ -70,7 +71,7 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
         fieldValueMeta = inputRowMeta.getValueMeta( fieldIndex );
       }
 
-      initCounter.inc();
+      Metrics.counter( "init", stepname ).inc();
     } catch(Exception e) {
       errorCounter.inc();
       LOG.error( "Error in setup of adding timestamp to rows : " + e.getMessage() );

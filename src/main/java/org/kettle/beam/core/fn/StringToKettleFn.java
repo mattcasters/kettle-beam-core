@@ -46,18 +46,15 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
   @Setup
   public void setUp() {
     try {
-      // Just to make sure
-      //
-      BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-      initCounter = Metrics.counter( "init", stepname );
       inputCounter = Metrics.counter( "input", stepname );
       writtenCounter = Metrics.counter( "written", stepname );
-      errorCounter = Metrics.counter( "error", stepname );
 
-      initCounter.inc();
+      // Initialize Kettle Beam
+      //
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
+
+      Metrics.counter( "init", stepname ).inc();
     } catch ( Exception e ) {
       errorCounter.inc();
       LOG.error( "Error in setup of converting input data into Kettle rows : " + e.getMessage() );

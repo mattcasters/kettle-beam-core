@@ -41,12 +41,13 @@ public class PublishStringsFn extends DoFn<KettleRow, String> {
   @Setup
   public void setUp() {
     try {
-      BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
       readCounter = Metrics.counter( "read", stepname );
       outputCounter = Metrics.counter( "output", stepname );
+
+      // Initialize Kettle Beam
+      //
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
       Metrics.counter( "init", stepname ).inc();
     } catch ( Exception e ) {

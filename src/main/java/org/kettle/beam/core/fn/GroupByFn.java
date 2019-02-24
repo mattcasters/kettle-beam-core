@@ -55,8 +55,13 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
   @Setup
   public void setUp() {
     try {
-      BeamKettle.init(stepPluginClasses, xpPluginClasses);
+      readCounter = Metrics.counter( "read", counterName );
+      writtenCounter = Metrics.counter( "written", counterName );
+      errorCounter = Metrics.counter( "error", counterName );
 
+      // Initialize Kettle Beam
+      //
+      BeamKettle.init(stepPluginClasses, xpPluginClasses);
       groupRowMeta = JsonRowMeta.fromJson( groupRowMetaJson );
       subjectRowMeta = JsonRowMeta.fromJson( subjectRowMetaJson );
       aggregationTypes = new AggregationType[aggregations.length];
@@ -64,12 +69,7 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
         aggregationTypes[ i ] = AggregationType.getTypeFromName( aggregations[ i ] );
       }
 
-      initCounter = Metrics.counter( "init", counterName );
-      readCounter = Metrics.counter( "read", counterName );
-      writtenCounter = Metrics.counter( "written", counterName );
-      errorCounter = Metrics.counter( "error", counterName );
-
-      initCounter.inc();
+      Metrics.counter( "init", counterName ).inc();
     } catch(Exception e) {
       errorCounter.inc();
       LOG.error("Error setup of grouping by ", e);

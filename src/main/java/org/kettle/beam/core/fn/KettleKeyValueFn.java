@@ -52,10 +52,12 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
   @Setup
   public void setUp() {
     try {
-      // Initialize
+      readCounter = Metrics.counter( "read", counterName );
+      errorCounter = Metrics.counter( "error", counterName );
+
+      // Initialize Kettle Beam
       //
       BeamKettle.init(stepPluginClasses, xpPluginClasses);
-
       inputRowMeta = JsonRowMeta.fromJson( inputRowMetaJson );
 
       // Calculate key indexes
@@ -81,13 +83,9 @@ public class KettleKeyValueFn extends DoFn<KettleRow, KV<KettleRow, KettleRow>> 
         }
       }
 
-      initCounter = Metrics.counter( "init", counterName );
-      readCounter = Metrics.counter( "read", counterName );
-      errorCounter = Metrics.counter( "error", counterName );
-
       // Now that we know everything, we can split the row...
       //
-      initCounter.inc();
+      Metrics.counter( "init", counterName ).inc();
     } catch(Exception e) {
       errorCounter.inc();
       LOG.error("Error setup of splitting row into key and value", e);

@@ -52,18 +52,18 @@ public class AssemblerFn extends DoFn<KV<KettleRow, KV<KettleRow, KettleRow>>, K
   @Setup
   public void setUp() {
     try {
-      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+      writtenCounter = Metrics.counter( "written", counterName );
+      errorCounter = Metrics.counter( "error", counterName );
 
+      // Initialize Kettle Beam
+      //
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
       outputRowMeta = JsonRowMeta.fromJson( outputRowMetaJson );
       leftKRowMeta = JsonRowMeta.fromJson( leftKRowMetaJson );
       leftVRowMeta = JsonRowMeta.fromJson( leftVRowMetaJson );
       rightVRowMeta = JsonRowMeta.fromJson( rightVRowMetaJson );
 
-      initCounter = Metrics.counter( "init", counterName );
-      writtenCounter = Metrics.counter( "written", counterName );
-      errorCounter = Metrics.counter( "error", counterName );
-
-      initCounter.inc();
+      Metrics.counter( "init", counterName ).inc();
     } catch(Exception e) {
       errorCounter.inc();
       LOG.error( "Error initializing assembling rows", e);

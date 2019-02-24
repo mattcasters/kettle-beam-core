@@ -54,16 +54,16 @@ public class WindowInfoFn extends DoFn<KettleRow, KettleRow> {
   @Setup
   public void setUp() {
     try {
-      BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-      inputRowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-      initCounter = Metrics.counter( "init", stepname );
       readCounter = Metrics.counter( "read", stepname );
       writtenCounter = Metrics.counter( "written", stepname );
       errorCounter = Metrics.counter( "error", stepname );
 
-      initCounter.inc();
+      // Initialize Kettle Beam
+      //
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+      inputRowMeta = JsonRowMeta.fromJson( rowMetaJson );
+
+      Metrics.counter( "init", stepname ).inc();
     } catch(Exception e) {
       errorCounter.inc();
       LOG.error( "Error in setup of adding window information to rows : " + e.getMessage() );

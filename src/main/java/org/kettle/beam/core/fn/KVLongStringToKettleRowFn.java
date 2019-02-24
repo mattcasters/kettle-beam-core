@@ -39,12 +39,13 @@ public class KVLongStringToKettleRowFn extends DoFn<KV<Long,String>, KettleRow> 
   @Setup
   public void setUp() {
     try {
-      BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
       inputCounter = Metrics.counter( "input", stepname );
       writtenCounter = Metrics.counter( "written", stepname );
+
+      // Initialize Kettle Beam
+      //
+      BeamKettle.init( stepPluginClasses, xpPluginClasses );
+      rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
       Metrics.counter( "init", stepname ).inc();
     } catch ( Exception e ) {

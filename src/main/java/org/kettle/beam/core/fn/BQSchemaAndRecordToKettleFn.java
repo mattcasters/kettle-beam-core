@@ -58,16 +58,14 @@ public class BQSchemaAndRecordToKettleFn implements SerializableFunction<SchemaA
 
       if ( rowMeta == null ) {
 
-        // Just to make sure
-        //
-        BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-        initCounter = Metrics.counter( "init", stepname );
         inputCounter = Metrics.counter( "input", stepname );
         writtenCounter = Metrics.counter( "written", stepname );
         errorCounter = Metrics.counter( "error", stepname );
+
+        // Initialize Kettle
+        //
+        BeamKettle.init( stepPluginClasses, xpPluginClasses );
+        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
         int[] valueTypes = new int[rowMeta.size()];
 
@@ -100,7 +98,7 @@ public class BQSchemaAndRecordToKettleFn implements SerializableFunction<SchemaA
 
         simpleDateFormat = new SimpleDateFormat( "yyyy-MM-dd'T'HH:mm:ss" );
         simpleDateFormat.setLenient( true );
-        initCounter.inc();
+        Metrics.counter( "init", stepname ).inc();
       }
 
       inputCounter.inc();

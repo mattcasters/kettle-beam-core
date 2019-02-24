@@ -45,19 +45,17 @@ public class KettleToBQTableRowFn implements SerializableFunction<KettleRow, Tab
 
     try {
       if ( rowMeta == null ) {
-        // Just to make sure
-        //
-        BeamKettle.init( stepPluginClasses, xpPluginClasses );
-
-        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
-
-        initCounter = Metrics.counter( "init", counterName );
         readCounter = Metrics.counter( "read", counterName );
         outputCounter = Metrics.counter( "output", counterName );
         errorCounter = Metrics.counter( "error", counterName );
 
+        // Initialize Kettle Beam
+        //
+        BeamKettle.init( stepPluginClasses, xpPluginClasses );
+        rowMeta = JsonRowMeta.fromJson( rowMetaJson );
+
         simpleDateFormat = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss.SSS" );
-        initCounter.inc();
+        Metrics.counter( "init", counterName ).inc();
       }
 
       readCounter.inc();
