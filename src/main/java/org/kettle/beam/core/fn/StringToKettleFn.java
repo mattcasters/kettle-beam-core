@@ -25,10 +25,8 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
 
-  private transient Counter initCounter;
   private transient Counter inputCounter;
   private transient Counter writtenCounter;
-  private transient Counter errorCounter;
 
   // Log and count parse errors.
   private static final Logger LOG = LoggerFactory.getLogger( StringToKettleFn.class );
@@ -56,7 +54,7 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
 
       Metrics.counter( "init", stepname ).inc();
     } catch ( Exception e ) {
-      errorCounter.inc();
+      Metrics.counter( "error", stepname ).inc();
       LOG.error( "Error in setup of converting input data into Kettle rows : " + e.getMessage() );
       throw new RuntimeException( "Error in setup of converting input data into Kettle rows", e );
     }
@@ -96,7 +94,7 @@ public class StringToKettleFn extends DoFn<String, KettleRow> {
       writtenCounter.inc();
 
     } catch ( Exception e ) {
-      errorCounter.inc();
+      Metrics.counter( "error", stepname ).inc();
       LOG.error( "Error converting input data into Kettle rows " + processContext.element() + ", " + e.getMessage() );
       throw new RuntimeException( "Error converting input data into Kettle rows", e );
 

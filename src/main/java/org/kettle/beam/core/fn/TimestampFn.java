@@ -4,10 +4,12 @@ import org.apache.beam.sdk.metrics.Counter;
 import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.commons.lang.StringUtils;
+import org.joda.time.Duration;
 import org.joda.time.Instant;
 import org.kettle.beam.core.BeamKettle;
 import org.kettle.beam.core.KettleRow;
 import org.kettle.beam.core.util.JsonRowMeta;
+import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
@@ -27,7 +29,6 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
 
-  private transient Counter initCounter;
   private transient Counter readCounter;
   private transient Counter writtenCounter;
   private transient Counter errorCounter;
@@ -114,7 +115,10 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
             instant = new Instant( timestamp.toInstant() );
           } else {
             Date date = fieldValueMeta.getDate( fieldData );
-            instant = new Instant( date.toInstant() );
+            if (date==null) {
+              throw new KettleException( "Timestamp field contains a null value, this can't be used to set a timestamp on a bounded/unbounded collection of data" );
+            }
+            instant = new Instant( date.getTime() );
           }
         }
       }
@@ -130,6 +134,4 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
       throw new RuntimeException( "Error adding timestamp to rows", e );
     }
   }
-
-
 }

@@ -61,7 +61,8 @@ public class BeamSubscribeTransform extends PTransform<PBegin, PCollection<Kettl
     this.xpPluginClasses = xpPluginClasses;
   }
 
-  @Override public PCollection<KettleRow> expand( PBegin input ) {
+  @Override
+  public PCollection<KettleRow> expand( PBegin input ) {
 
     try {
       if ( rowMeta == null ) {
@@ -71,12 +72,10 @@ public class BeamSubscribeTransform extends PTransform<PBegin, PCollection<Kettl
 
         rowMeta = JsonRowMeta.fromJson( rowMetaJson );
 
-        initCounter = Metrics.counter( "init", stepname );
         inputCounter = Metrics.counter( "input", stepname );
         writtenCounter = Metrics.counter( "written", stepname );
-        errorCounter = Metrics.counter( "error", stepname );
 
-        initCounter.inc();
+        Metrics.counter( "init", stepname ).inc();
       }
 
       // This stuff only outputs a single field.
@@ -116,7 +115,7 @@ public class BeamSubscribeTransform extends PTransform<PBegin, PCollection<Kettl
 
       return output;
     } catch ( Exception e ) {
-      errorCounter.inc();
+      Metrics.counter( "error", stepname ).inc();
       LOG.error( "Error in beam subscribe transform", e );
       throw new RuntimeException( "Error in beam subscribe transform", e );
     }

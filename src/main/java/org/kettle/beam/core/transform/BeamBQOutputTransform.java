@@ -33,7 +33,9 @@ public class BeamBQOutputTransform extends PTransform<PCollection<KettleRow>, PD
   private String datasetId;
   private String tableId;
   private String rowMetaJson;
-  private boolean windowed;
+  private boolean createIfNeeded;
+  private boolean truncateTable;
+  private boolean failIfNotEmpty;
   private List<String> stepPluginClasses;
   private List<String> xpPluginClasses;
 
@@ -44,11 +46,14 @@ public class BeamBQOutputTransform extends PTransform<PCollection<KettleRow>, PD
   public BeamBQOutputTransform() {
   }
 
-  public BeamBQOutputTransform( String stepname, String projectId, String datasetId, String tableId, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
+  public BeamBQOutputTransform( String stepname, String projectId, String datasetId, String tableId, boolean createIfNeeded, boolean truncateTable, boolean failIfNotEmpty, String rowMetaJson, List<String> stepPluginClasses, List<String> xpPluginClasses ) {
     this.stepname = stepname;
     this.projectId = projectId;
     this.datasetId = datasetId;
     this.tableId = tableId;
+    this.createIfNeeded = createIfNeeded;
+    this.truncateTable = truncateTable;
+    this.failIfNotEmpty = failIfNotEmpty;
     this.rowMetaJson = rowMetaJson;
     this.stepPluginClasses = stepPluginClasses;
     this.xpPluginClasses = xpPluginClasses;
@@ -95,12 +100,30 @@ public class BeamBQOutputTransform extends PTransform<PCollection<KettleRow>, PD
 
       SerializableFunction<KettleRow, TableRow> formatFunction = new KettleToBQTableRowFn( stepname, rowMetaJson, stepPluginClasses, xpPluginClasses );
 
+      BigQueryIO.Write.CreateDisposition createDisposition;
+      if (createIfNeeded) {
+        createDisposition = BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED;
+      }  else {
+        createDisposition = BigQueryIO.Write.CreateDisposition.CREATE_NEVER;
+      }
+
+      BigQueryIO.Write.WriteDisposition writeDisposition;
+      if (truncateTable) {
+        writeDisposition = BigQueryIO.Write.WriteDisposition.WRITE_APPEND;
+      } else {
+        if (failIfNotEmpty) {
+          writeDisposition = BigQueryIO.Write.WriteDisposition.WRITE_EMPTY;
+        } else {
+          writeDisposition = BigQueryIO.Write.WriteDisposition.WRITE_APPEND;
+        }
+      }
+
       BigQueryIO.Write<KettleRow> bigQueryWrite = BigQueryIO
         .<KettleRow>write()
         .to( tableReference )
         .withSchema( tableSchema )
-        .withCreateDisposition( BigQueryIO.Write.CreateDisposition.CREATE_IF_NEEDED )
-        .withWriteDisposition( BigQueryIO.Write.WriteDisposition.WRITE_APPEND )
+        .withCreateDisposition( createDisposition )
+        .withWriteDisposition( writeDisposition )
         .withFormatFunction( formatFunction );
 
       // TODO: pass the results along the way at some point
