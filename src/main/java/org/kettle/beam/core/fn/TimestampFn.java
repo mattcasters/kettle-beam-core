@@ -134,4 +134,8 @@ public class TimestampFn extends DoFn<KettleRow, KettleRow> {
       throw new RuntimeException( "Error adding timestamp to rows", e );
     }
   }
+
+  @Override public Duration getAllowedTimestampSkew() {
+    return Duration.standardMinutes( 120 );
+  }
 }

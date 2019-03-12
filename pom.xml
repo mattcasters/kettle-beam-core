@@ -22,7 +22,7 @@
     <pentaho-kettle.version>8.2.0.0-342</pentaho-kettle.version>
     <mockito-all.version>1.9.5</mockito-all.version>
     <junit.version>4.4</junit.version>
-    <apache-beam-version>2.9.0</apache-beam-version>
+    <apache-beam-version>2.11.0</apache-beam-version>
   </properties>
 
   <repositories>
@@ -93,7 +93,7 @@
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
-      <version>27.0-jre</version>
+      <version>27.0.1-jre</version>
     </dependency>
     <dependency>
       <groupId>com.google.auto.service</groupId>

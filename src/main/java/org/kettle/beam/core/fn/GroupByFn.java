@@ -225,8 +225,6 @@ public class GroupByFn extends DoFn<KV<KettleRow, Iterable<KettleRow>>, KettleRo
                 throw new KettleException( "Unable to calculate average on data type : "+subjectValueMeta.getTypeDesc() );
             }
         }
-        results[i] = null;
-        counts[i]=0L;
       }
 
       // Now we have the results
