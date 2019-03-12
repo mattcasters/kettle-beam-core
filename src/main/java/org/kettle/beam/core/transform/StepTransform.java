@@ -31,8 +31,10 @@ import org.pentaho.di.trans.SingleThreadedTransExecutor;
 import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransHopMeta;
 import org.pentaho.di.trans.TransMeta;
+import org.pentaho.di.trans.step.BaseStep;
 import org.pentaho.di.trans.step.RowAdapter;
 import org.pentaho.di.trans.step.RowListener;
+import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaDataCombi;
 import org.pentaho.di.trans.step.StepMetaInterface;
@@ -172,6 +174,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     protected List<String> infoSteps;
     protected List<String> infoRowMetaJsons;
     protected boolean inputStep;
+    protected boolean initialize;
 
     protected List<PCollection<KettleRow>> infoCollections;
 
@@ -227,6 +230,7 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
       this.targetSteps = targetSteps;
       this.infoSteps = infoSteps;
       this.infoRowMetaJsons = infoRowMetaJsons;
+      this.initialize = true;
     }
 
     /**
@@ -237,6 +241,9 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
     @StartBundle
     public void startBundle(StartBundleContext startBundleContext) {
       rowBuffer = new ArrayList<>();
+      if ("ScriptValueMod".equals(stepPluginId) && trans!=null) {
+        initialize=true;
+      }
     }
 
     @ProcessElement
@@ -244,7 +251,8 @@ public class StepTransform extends PTransform<PCollection<KettleRow>, PCollectio
 
       try {
 
-        if (inputRowMeta==null) {
+        if (initialize) {
+          initialize = false;
 
           // Initialize Kettle and load extra plugins as well
           //
